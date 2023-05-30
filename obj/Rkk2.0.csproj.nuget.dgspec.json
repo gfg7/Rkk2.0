@@ -46,10 +46,6 @@
         "netcoreapp3.1": {
           "targetAlias": "netcoreapp3.1",
           "dependencies": {
-            "Microsoft.AspNetCore.Server.IISIntegration": {
-              "target": "Package",
-              "version": "[2.2.1, )"
-            },
             "NReco.Logging.File": {
               "target": "Package",
               "version": "[1.1.6, )"

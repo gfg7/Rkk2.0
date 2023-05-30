@@ -20,14 +20,12 @@ namespace Rkk2._0
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, IOptions<AppOptions> options)
+        public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            _options = options.Value;
         }
-
-        private readonly AppOptions _options;
         public IConfiguration Configuration { get; }
+        private AppOptions _options;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -44,6 +42,10 @@ namespace Rkk2._0
             services.Configure<AppOptions>(Configuration);
             services.AddControllers();
             services.AddHealthChecks();
+            using (var serviceProvider= services.BuildServiceProvider())
+            {
+                _options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+            }
             services.AddLogging(loggingBuilder =>
             {
                 var logsFolder = _options.LogsPath;
@@ -64,7 +66,11 @@ namespace Rkk2._0
         {
             app.UseDeveloperExceptionPage();
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(c =>
+            {
+                string swaggerJsonBasePath = string.IsNullOrWhiteSpace(c.RoutePrefix) ? "." : "..";
+                c.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/v1/swagger.json", "rkk2.0");
+            });
 
             using (var scope = app.ApplicationServices.CreateScope())
             {

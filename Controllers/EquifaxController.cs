@@ -33,15 +33,25 @@ namespace PackageRequest.Controllers
         }
 
         [HttpGet]
-        public void EquifaxGet()
+        public ActionResult EquifaxGet()
         {
             string path = _options.LogsPath;
             var @event = new EventId(new Random().Next(), nameof(EquifaxController));
 
             while (true)
             {
-                string[] filesOnFtpInbox = Directory.GetFiles(_options.FtpDirectoryIn);
-                string[] filesOnResponsDir = Directory.GetFiles(_options.RKK_EquifaxResponcePath);
+                string[] filesOnFtpInbox, filesOnResponsDir;
+                try
+                {
+                    filesOnFtpInbox = Directory.GetFiles(_options.FtpDirectoryIn);
+                    filesOnResponsDir = Directory.GetFiles(_options.RKK_EquifaxResponcePath);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(@event, ex, "Files not found");
+                    throw ex;
+                }
+
                 string cleanFilename = "";
                 string filenameResponse = "";
                 foreach (string filename in filesOnFtpInbox)
@@ -75,7 +85,7 @@ namespace PackageRequest.Controllers
                                     _logger.LogWarning(@event, $"Bad file naming {filename} {cleanFilename} {filenameResponse}");
                                 }
                             }
-                            catch (System.Exception ex)
+                            catch (Exception ex)
                             {
                                 _logger.LogError(@event, ex, $"File {filenameResponse} not found");
                             }

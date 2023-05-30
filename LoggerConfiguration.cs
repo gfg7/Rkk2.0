@@ -32,6 +32,10 @@ namespace PackageRequest
                 fileLoggerOpts.FileSizeLimitBytes = sizeLimit;
                 fileLoggerOpts.MinLevel = minLevel;
 
+                fileLoggerOpts.HandleFileError = (err) => {
+                    err.UseNewLogFileName(Path.GetFileNameWithoutExtension(err.LogFileName) + "_alt" + Path.GetExtension(err.LogFileName));
+                };
+
                 fileLoggerOpts.FilterLogEntry = (msg) =>
                 {
                     return msg.EventId.Name == eventName;

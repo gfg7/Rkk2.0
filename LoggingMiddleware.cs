@@ -37,6 +37,8 @@ namespace PackageRequest
             catch (Exception ex)
             {
                 _logger?.LogWarning(@event, ex, $"failed {request} {context.Response.StatusCode}");
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync(ex.Message);
             }
         }
     }

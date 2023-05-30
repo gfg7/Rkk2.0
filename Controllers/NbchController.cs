@@ -85,13 +85,13 @@ namespace PackageRequest.Controllers
 
         [HttpPost]
         [RequestSizeLimit(209715200)]
-        public async Task NbchPost(object body)
+        public async Task<ActionResult> NbchPost(object body)
         {
             var @event = _event;
             if (Request.ContentLength==0 || Request.Body.Length==0)
             {
                 _logger?.LogWarning(@event, $"CRE request is empty");
-                return;
+                return BadRequest(@event.Id);
             }
 
             var streamReader = new StreamReader(Request.Body);
@@ -106,7 +106,7 @@ namespace PackageRequest.Controllers
             catch (Exception ex)
             {
                 _logger?.LogError(@event, ex, $"Response name build from {fileName} failed");
-                return;
+                throw ex;
             }
 
             string responseFileName = string.Empty;
@@ -120,7 +120,7 @@ namespace PackageRequest.Controllers
             catch (Exception ex)
             {
                 _logger?.LogError(@event, ex, $"File {responseFileName} in response folder {_options.RKK_NbchResponcePath} not found");
-                return;
+                throw ex;
             }
 
             try
@@ -128,11 +128,13 @@ namespace PackageRequest.Controllers
                 _logger?.LogInformation(@event, responseFileName);
                 System.IO.File.Move(files[0], files[0].Remove(files[0].IndexOf('6')) + responseFileName);
                 _logger?.LogInformation(@event, $"Moving file {responseFileName} to ftp folder {_options.FtpDirectoryOut} success");
+
+                return Ok();
             }
             catch (Exception ex)
             {
                 _logger?.LogWarning(@event, ex, $"Moving file {responseFileName} to ftp folder {_options.FtpDirectoryOut} fail");
-                return;
+                throw ex;
             }
 
             // записываем пришедший файл на винт
