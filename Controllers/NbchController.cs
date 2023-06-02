@@ -34,7 +34,7 @@ namespace PackageRequest.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public IActionResult NbchGet(string id)
+        public IActionResult NbchGet([FromRoute]string id)
         {
             string[] files = Directory.GetFiles(_options.RKK_NbchResponcePath);
             var @event = _event;

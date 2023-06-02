@@ -78,7 +78,11 @@ namespace Rkk2._0
 
                 if (options.Value.LogIncomming)
                 {
-                    app.UseMiddleware<LoggingMiddleware>();
+                    app.MapWhen(context => true, builder =>
+                    {
+                        builder.UseMiddleware<LoggingMiddleware>();
+                    });
+                    //app.UseMiddleware<LoggingMiddleware>();
                 }
             }
 
