@@ -25,7 +25,7 @@ namespace PackageRequest
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var request = $"{context.TraceIdentifier} {context.Request.Method} {context.Request.Path}?{context.Request.QueryString}";
+            var request = $"{context.TraceIdentifier} {context.Request.Method} {context.Request.Path}?{context.Request.QueryString} \n{context.Request.Body}";
             var @event = _event;
             _logger?.LogInformation(@event, $"income {request}");
 
