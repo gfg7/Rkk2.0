@@ -33,6 +33,7 @@ namespace PackageRequest.Controllers
         }
 
         [HttpGet]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         [Route("{id}")]
         public IActionResult NbchGet([FromRoute]string id)
         {
@@ -84,7 +85,7 @@ namespace PackageRequest.Controllers
         }
 
         [HttpPost]
-        [RequestSizeLimit(209715200)]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public async Task<ActionResult> NbchPost(object body)
         {
             var @event = _event;

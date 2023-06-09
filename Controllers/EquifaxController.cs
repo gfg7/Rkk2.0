@@ -32,6 +32,7 @@ namespace PackageRequest.Controllers
             }
         }
 
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         [HttpGet]
         public ActionResult EquifaxGet()
         {

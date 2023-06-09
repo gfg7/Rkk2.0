@@ -28,7 +28,7 @@ namespace Rkk2._0
                     webBuilder.CaptureStartupErrors(true);
                     webBuilder.ConfigureKestrel((context, options) =>
                     {
-                        options.Limits.MaxRequestBodySize = 209715200;
+                        options.Limits.MaxRequestBodySize = null;
                     })
                     .UseStartup<Startup>();
                 });

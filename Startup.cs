@@ -78,19 +78,19 @@ namespace Rkk2._0
                 c.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/v1/swagger.json", "rkk2.0");
             });
 
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var options = scope.ServiceProvider.GetRequiredService<IOptions<AppOptions>>();
+            //using (var scope = app.ApplicationServices.CreateScope())
+            //{
+            //    var options = scope.ServiceProvider.GetRequiredService<IOptions<AppOptions>>();
 
-                if (options.Value.LogIncomming)
-                {
+            //    if (options.Value.LogIncomming)
+            //    {
                     app.MapWhen(context => true, builder =>
                     {
                         builder.UseMiddleware<LoggingMiddleware>();
                     });
                     //app.UseMiddleware<LoggingMiddleware>();
-                }
-            }
+            //    }
+            //}
 
             app.UseHttpsRedirection();
 

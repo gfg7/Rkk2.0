@@ -32,7 +32,7 @@ namespace PackageRequest.Controllers
         }
 
         [HttpPost]
-        [RequestSizeLimit(209715200)]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public async Task<IActionResult> OkbList()
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
