@@ -25,7 +25,7 @@ namespace PackageRequest
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var request = $"{context.TraceIdentifier} {context.Request.Method} {context.Request.Path}{context.Request.QueryString} \n{context.Request.Body}";
+            var request = $"{context.Request.Method} {context.Request.Path}";
             var @event = _event;
             _logger.LogInformation(@event, $"income {request}");
 
@@ -36,9 +36,8 @@ namespace PackageRequest
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(@event, ex, $"failed {request} {context.Response.StatusCode} \n {ex.Message}");
-                context.Response.StatusCode = 500;
-                await context.Response.WriteAsync(ex.Message);
+                _logger.LogWarning(@event, ex, $"failed {request}");
+                throw ex;
             }
         }
     }

@@ -1,15 +1,11 @@
 using System;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.Extensions.Configuration;
 using System.IO;
-using System.Text;
-using System.IO.Compression;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 #nullable enable
 namespace PackageRequest.Controllers
@@ -86,20 +82,35 @@ namespace PackageRequest.Controllers
         public async Task<ActionResult> NbchPost(object body)
         {
             var @event = _event;
-            if (Request.ContentLength==0 || Request.Body.Length==0)
-            {
-                _logger.LogWarning(@event, $"CRE request is empty");
-                return BadRequest(@event.Id);
-            }
 
             var streamReader = new StreamReader(Request.Body);
             string xmlData = await streamReader.ReadToEndAsync();
+
+            if (string.IsNullOrEmpty(xmlData)) 
+            {
+                xmlData = body.ToString();
+            }
+
+            if (string.IsNullOrEmpty(xmlData))
+            {
+                _logger.LogWarning(@event, $"CRE request is empty");
+                throw new Exception()
+                {
+                    HelpLink = @event.Id.ToString()
+                };
+            }
+
             _logger.LogInformation(@event, $"CRE pushed request {xmlData}");
 
             string fileName = string.Empty;
             try
             {
-                fileName = xmlData.Substring(xmlData.IndexOf("6801BB"), xmlData.IndexOf(".XML.gz") - xmlData.IndexOf("6801BB"));
+
+                Regex regex = new Regex(@"(?<=6810BB|6810BB00).*?(?=\.XML\.gz)");
+                MatchCollection matches = regex.Matches(xmlData);
+                fileName = matches.FirstOrDefault().Value;
+
+                //fileName = xmlData.Substring(xmlData.IndexOf("6801BB"), xmlData.IndexOf(".XML.gz") - xmlData.IndexOf("6801BB"));
             }
             catch (Exception ex)
             {

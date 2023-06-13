@@ -53,11 +53,19 @@ namespace Rkk2._0
                 var sizeLimit = _options.FileSizeLimitBytes;
                 var maxFileCount = _options.MaxRollingFiles;
 
-                loggingBuilder.BuildLogger(logsFolder, "Nbch", "Nbch", nameof(NbchController), maxFileCount, sizeLimit, minLevel);
-                loggingBuilder.BuildLogger(logsFolder, "Experian", "Experian", nameof(ExperianController), maxFileCount, sizeLimit, minLevel);
-                loggingBuilder.BuildLogger(logsFolder, "Equifax", "Equifax", nameof(EquifaxController), maxFileCount, sizeLimit, minLevel);
-                loggingBuilder.BuildLogger(logsFolder, "ExperianScoring", "ExperianScoring", nameof(ExperianScoringController), maxFileCount, sizeLimit, minLevel);
-                loggingBuilder.BuildLogger(logsFolder, "RequestResponse", "RequestResponse", nameof(LoggingMiddleware), maxFileCount, sizeLimit, minLevel);
+                if (_options.Loging)
+                {
+                    loggingBuilder.BuildLogger(logsFolder, "Nbch", "Nbch", nameof(NbchController), maxFileCount, sizeLimit, minLevel);
+                    loggingBuilder.BuildLogger(logsFolder, "Experian", "Experian", nameof(ExperianController), maxFileCount, sizeLimit, minLevel);
+                    loggingBuilder.BuildLogger(logsFolder, "Equifax", "Equifax", nameof(EquifaxController), maxFileCount, sizeLimit, minLevel);
+                    loggingBuilder.BuildLogger(logsFolder, "ExperianScoring", "ExperianScoring", nameof(ExperianScoringController), maxFileCount, sizeLimit, minLevel);
+                }
+
+                if (_options.LogIncomming)
+                {
+                    loggingBuilder.BuildLogger(logsFolder, "RequestResponse", "RequestResponse", nameof(LoggingMiddleware), maxFileCount, sizeLimit, minLevel);
+                }
+                
             });
         }
 
@@ -78,19 +86,7 @@ namespace Rkk2._0
                 c.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/v1/swagger.json", "rkk2.0");
             });
 
-            //using (var scope = app.ApplicationServices.CreateScope())
-            //{
-            //    var options = scope.ServiceProvider.GetRequiredService<IOptions<AppOptions>>();
-
-            //    if (options.Value.LogIncomming)
-            //    {
-                    app.MapWhen(context => true, builder =>
-                    {
-                        builder.UseMiddleware<LoggingMiddleware>();
-                    });
-                    //app.UseMiddleware<LoggingMiddleware>();
-            //    }
-            //}
+            app.UseMiddleware<LoggingMiddleware>();
 
             app.UseHttpsRedirection();
 

@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Controllers\NbchController.cs~RF1a715305.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NReco.Logging.File" Version="1.1.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
