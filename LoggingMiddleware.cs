@@ -10,7 +10,7 @@ namespace PackageRequest
     public class LoggingMiddleware
     {
         private readonly RequestDelegate _request;
-        private readonly ILogger<LoggingMiddleware>? _logger;
+        private readonly ILogger<LoggingMiddleware> _logger;
         private EventId _event => new EventId(new Random().Next(), nameof(LoggingMiddleware));
 
         public LoggingMiddleware(RequestDelegate request, ILogger<LoggingMiddleware> logger, IOptions<AppOptions> options)
@@ -25,18 +25,18 @@ namespace PackageRequest
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var request = $"{context.TraceIdentifier} {context.Request.Method} {context.Request.Path}?{context.Request.QueryString} \n{context.Request.Body}";
+            var request = $"{context.TraceIdentifier} {context.Request.Method} {context.Request.Path}{context.Request.QueryString} \n{context.Request.Body}";
             var @event = _event;
-            _logger?.LogInformation(@event, $"income {request}");
+            _logger.LogInformation(@event, $"income {request}");
 
             try
             {
                 await _request.Invoke(context);
-                _logger?.LogInformation(@event, $"finished {request} {context.Response.StatusCode}");
+                _logger.LogInformation(@event, $"finished {request} {context.Response.StatusCode}");
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning(@event, ex, $"failed {request} {context.Response.StatusCode}");
+                _logger.LogWarning(@event, ex, $"failed {request} {context.Response.StatusCode} \n {ex.Message}");
                 context.Response.StatusCode = 500;
                 await context.Response.WriteAsync(ex.Message);
             }
