@@ -1,0 +1,17 @@
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Rkk2.0.exe
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\net461-x86\GetDocument.Insider.exe.config
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\net461\GetDocument.Insider.exe.config
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\appsettings.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\dotnet-getdocument.deps.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\dotnet-getdocument.runtimeconfig.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\netcoreapp2.1\GetDocument.Insider.deps.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\LocalPackages\microsoft.extensions.apidescription.server\6.0.5\tools\netcoreapp2.1\GetDocument.Insider.runtimeconfig.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Rkk2.0.dll
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Rkk2.0.deps.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Rkk2.0.runtimeconfig.json
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Rkk2.0.pdb
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Microsoft.OpenApi.dll
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\NReco.Logging.File.dll
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Swashbuckle.AspNetCore.Swagger.dll
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Swashbuckle.AspNetCore.SwaggerGen.dll
+D:\rkk-stub\Rkk2.0\bin\Debug\netcoreapp3.1\publish\Swashbuckle.AspNetCore.SwaggerUI.dll
