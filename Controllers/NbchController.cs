@@ -18,14 +18,17 @@ namespace PackageRequest.Controllers
     public class NbchController : ControllerBase
     {
         private readonly AppOptions _options;
-        private readonly ILogger<NbchController> _logger;
+        private readonly ILogger<NbchController>? _logger;
         private EventId _event => new EventId(new Random().Next(), nameof(NbchController));
 
         public NbchController(IOptions<AppOptions> options, ILogger<NbchController> logger)
         {
             _options = options.Value;
 
-            _logger = logger;
+            if (_options.Loging)
+            {
+                _logger = logger;
+            }
         }
 
         [HttpGet]
@@ -38,7 +41,7 @@ namespace PackageRequest.Controllers
 
             if (files.Length == 0)
             {
-                _logger.LogError(@event, $"Files in response folder {_options.RKK_NbchResponcePath} not found");
+                _logger?.LogError(@event, $"Files in response folder {_options.RKK_NbchResponcePath} not found");
                 throw new FileNotFoundException();
             }
 
@@ -61,14 +64,14 @@ namespace PackageRequest.Controllers
 
                 System.IO.File.Delete(newResponseName);
 
-                _logger.LogInformation(@event, $"File {newResponseName} reading success");
+                _logger?.LogInformation(@event, $"File {newResponseName} reading success");
 
                 fstream.Position = 0;
                 return File(fstream, "application/pkcs7-mime");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(@event, ex, $"File {fileName} reading fail");
+                _logger?.LogWarning(@event, ex, $"File {fileName} reading fail");
                 throw new FileNotFoundException();
             }
         }
@@ -79,13 +82,15 @@ namespace PackageRequest.Controllers
         {
             var @event = _event;
 
-            _logger.LogInformation(@event, "CRE pushed request");
+            _logger?.LogInformation(@event, "CRE pushed request");
 
             string requestFilename = Request.Headers["Content-Disposition"];
 
+            _logger?.LogInformation(@event, $"request headers {requestFilename}");
+
             string fileName = requestFilename.Substring(requestFilename.IndexOf("filename=") + 9).Trim();
 
-            _logger.LogInformation(@event, $"request file {fileName}");
+            _logger?.LogInformation(@event, $"request file {fileName}");
 
             return Ok();
 
