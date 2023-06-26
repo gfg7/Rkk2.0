@@ -1,11 +1,14 @@
 using System;
-using Microsoft.AspNetCore.Mvc;
 using System.IO;
-using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Mime;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Win32.SafeHandles;
 
 #nullable enable
 namespace PackageRequest.Controllers
@@ -22,129 +25,69 @@ namespace PackageRequest.Controllers
         {
             _options = options.Value;
 
-                _logger = logger;
+            _logger = logger;
         }
 
         [HttpGet]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        [Route("{id}")]
-        public IActionResult NbchGet([FromRoute]string id)
+        [Route("{fileName}")]
+        public async Task<ActionResult> NbchGet([FromRoute] string fileName)
         {
             string[] files = Directory.GetFiles(_options.RKK_NbchResponcePath);
             var @event = _event;
 
-            FileStream fstream = null;
-
             if (files.Length == 0)
             {
                 _logger.LogError(@event, $"Files in response folder {_options.RKK_NbchResponcePath} not found");
-                return Problem(title: @event.Id.ToString(), detail: _options.LogsPath + " Nbch.log", statusCode: 500);
+                throw new FileNotFoundException();
             }
+
+            await Task.Delay(_options.SleepNbch);
+
+            Response.Headers.Add("Accept-Ranges", "bytes");
 
             try
             {
-                foreach (string fileName in files)
+                Stream fstream = new MemoryStream();
+
+                var newResponseName = Path.Join(Path.GetDirectoryName(files[0]), fileName);
+                System.IO.File.Move(files[0], newResponseName);
+
+                using (var stream = new FileStream(newResponseName, FileMode.Open, FileAccess.Read))
                 {
-                    if (fileName.Contains(id.Remove(id.IndexOf("."))))
-                    {
-                        _logger.LogInformation(@event, $"File {fileName} search success");
-
-                        Response.Headers.Add("Accept-Ranges", "bytes");
-                        Response.Headers.ContentLength = 89506816;
-
-                        try
-                        {
-                            fstream = System.IO.File.OpenRead(fileName);
-                            _logger.LogInformation(@event, $"File {fileName} reading success");
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(@event, ex, $"File {fileName} reading fail");
-                            return Problem(title: @event.Id.ToString(), detail: _options.LogsPath + " Nbch.log", statusCode: 500);
-                        }
-                    }
+                    stream.Position = 0;
+                    await stream.CopyToAsync(fstream);
                 }
+
+                System.IO.File.Delete(newResponseName);
+
+                _logger.LogInformation(@event, $"File {newResponseName} reading success");
+
+                fstream.Position = 0;
+                return File(fstream, "application/pkcs7-mime");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(@event, ex, $"File {id} not found");
-                return Problem(title: @event.Id.ToString(), detail: _options.LogsPath + " Nbch.log", statusCode: 404);
+                _logger.LogWarning(@event, ex, $"File {fileName} reading fail");
+                throw new FileNotFoundException();
             }
-
-            Task.Delay(_options.SleepNbch);
-
-            return File(fstream, "application/pkcs7-mime");
         }
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<ActionResult> NbchPost(object body)
+        public async Task<ActionResult> NbchPost()
         {
             var @event = _event;
 
-            var streamReader = new StreamReader(Request.Body);
-            string xmlData = await streamReader.ReadToEndAsync();
+            _logger.LogInformation(@event, "CRE pushed request");
 
-            if (string.IsNullOrEmpty(xmlData)) 
-            {
-                xmlData = body.ToString();
-            }
+            string requestFilename = Request.Headers["Content-Disposition"];
 
-            if (string.IsNullOrEmpty(xmlData))
-            {
-                _logger.LogWarning(@event, $"CRE request is empty");
-                throw new Exception()
-                {
-                    HelpLink = @event.Id.ToString()
-                };
-            }
+            string fileName = requestFilename.Substring(requestFilename.IndexOf("filename=") + 9).Trim();
 
-            _logger.LogInformation(@event, $"CRE pushed request {xmlData}");
+            _logger.LogInformation(@event, $"request file {fileName}");
 
-            string fileName = string.Empty;
-            try
-            {
-
-                Regex regex = new Regex(@"(?<=6810BB|6810BB00).*?(?=\.XML\.gz)");
-                MatchCollection matches = regex.Matches(xmlData);
-                fileName = matches.FirstOrDefault().Value;
-
-                //fileName = xmlData.Substring(xmlData.IndexOf("6801BB"), xmlData.IndexOf(".XML.gz") - xmlData.IndexOf("6801BB"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(@event, ex, $"Response name build from {fileName} failed");
-                throw ex;
-            }
-
-            string responseFileName = string.Empty;
-            string[] files;
-            try
-            {
-                files = Directory.GetFiles(_options.RKK_NbchResponcePath);
-                responseFileName = fileName + "_Reply.XML.gz.p7s.p7m";
-                _logger.LogInformation(@event, $"Response file {responseFileName} found");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(@event, ex, $"File {responseFileName} in response folder {_options.RKK_NbchResponcePath} not found");
-                throw ex;
-            }
-
-            try
-            {
-                _logger.LogInformation(@event, responseFileName);
-                System.IO.File.Move(files[0], files[0].Remove(files[0].IndexOf('6')) + responseFileName);
-                _logger.LogInformation(@event, $"Moving file {responseFileName} to ftp folder {_options.FtpDirectoryOut} success");
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(@event, ex, $"Moving file {responseFileName} to ftp folder {_options.FtpDirectoryOut} fail");
-                throw ex;
-            }
+            return Ok();
 
             // записываем пришедший файл на винт
             /*using (var fileStream = new FileStream(path + fileName, FileMode.Create))

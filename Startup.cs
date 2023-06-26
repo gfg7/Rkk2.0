@@ -41,11 +41,13 @@ namespace Rkk2._0
 
             services.Configure<AppOptions>(Configuration);
             services.AddControllers();
+            services.AddHostedService<EquifaxController>();
             services.AddHealthChecks();
             using (var serviceProvider= services.BuildServiceProvider())
             {
                 _options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
             }
+            
             services.AddLogging(loggingBuilder =>
             {
                 var logsFolder = _options.LogsPath;
@@ -65,7 +67,6 @@ namespace Rkk2._0
                 {
                     loggingBuilder.BuildLogger(logsFolder, "RequestResponse", "RequestResponse", nameof(LoggingMiddleware), maxFileCount, sizeLimit, minLevel);
                 }
-                
             });
         }
 
@@ -91,8 +92,6 @@ namespace Rkk2._0
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
-            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
