@@ -39,6 +39,7 @@ namespace Rkk2._0
                 });
             });
 
+            services.AddSingleton<ExperianRequestFileStore>();
             services.Configure<AppOptions>(Configuration);
             services.AddControllers();
             services.AddHostedService<EquifaxController>();

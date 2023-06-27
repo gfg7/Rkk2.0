@@ -1,17 +1,17 @@
-using System.Threading;
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using System.Text;
-using System.Text.RegularExpressions;
-using Microsoft.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 #nullable enable
 namespace PackageRequest.Controllers
@@ -21,9 +21,11 @@ namespace PackageRequest.Controllers
     {
         private readonly AppOptions _options;
         private readonly ILogger<ExperianController>? _logger;
-        public ExperianController(ILogger<ExperianController> logger, IOptions<AppOptions> options)
+        private readonly ExperianRequestFileStore _requestStore;
+        public ExperianController(ILogger<ExperianController> logger, IOptions<AppOptions> options, ExperianRequestFileStore requestStore)
         {
             _options = options.Value;
+            _requestStore = requestStore;
 
             if (_options.Loging)
             {
@@ -33,7 +35,7 @@ namespace PackageRequest.Controllers
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<IActionResult> OkbList()
+        public async Task<ActionResult> OkbList()
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
@@ -53,10 +55,16 @@ namespace PackageRequest.Controllers
             int actionFlag = int.Parse(actionFlagText.Trim());
             string resp = "";
 
-            _logger.LogInformation(@event, $"Request action flag {actionFlag}");
+            _logger?.LogInformation(@event, $"Request action flag {actionFlag}");
 
             if (actionFlag == 7)
             {
+                string requestFilename = xmlData.Substring(xmlData.LastIndexOf("filename="), xmlData.LastIndexOf(".pem") + 4);
+
+                _requestStore.AddNewRequest(requestFilename);
+
+                _logger?.LogInformation(@event, $"Requested file {requestFilename} is added to queue");
+
                 resp = "<s>\n" +
                     "<s n=\"Data\">\n" +
                     "<a n=\"ActionFlag\">7</a>\n" +
@@ -80,18 +88,21 @@ namespace PackageRequest.Controllers
             }
             else if (actionFlag == 9)
             {
-                string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
+                // string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
 
-                var nameFiles = files.Select(x =>
-                {
-                    string[] words = x.Split(new char[] { '\\' });
-                    return words.Last();
-                });
+                // var nameFiles = files.Select(x =>
+                // {
+                //     string[] words = x.Split(new char[] { '\\' });
+                //     return words.Last();
+                // });
 
-                string str = "<s><a n = \"Name\">???</a></s>";
-                string strXml = "";
+                var firstRequested = _requestStore.PeekRequest().Replace("CHD", "RESP");
 
-                nameFiles.ToList().ForEach(x => strXml += str.Replace("???", x) + '\n');
+                _logger?.LogInformation(@event, $"Requested file {firstRequested} is used");
+
+                string strXml = $"<s><a n = \"Name\">{firstRequested}</a></s>";
+
+                // nameFiles.ToList().ForEach(x => strXml += str.Replace("???", x) + '\n');
 
                 resp = "<s>\n" +
                                   "<s n=\"Data\">\n" +
@@ -101,7 +112,7 @@ namespace PackageRequest.Controllers
                                       "<c n= \"wlListOfFiles\">\n" +
                                       strXml +
                                       "</c>\n" +
-                                      "<a n=\"wlReturnCount\">" + nameFiles.Count().ToString() + "</a>\n" +
+                                      "<a n=\"wlReturnCount\">" + 1 + "</a>\n" +
                                       "</s>\n" +
                                       "</c>\n" +
                                       "<a n=\"StreamID\">30564169</a>\n" +
@@ -113,25 +124,32 @@ namespace PackageRequest.Controllers
             }
             else if (actionFlag == 1)
             {
-                Regex regex = new Regex("RESP(.*?)pem.pem");
-                MatchCollection matches = regex.Matches(xmlData);
+
+                Thread.Sleep(_options.SleepExperian);
+
+                var firstRequested = _requestStore.ProcessRequest().Replace("CHD", "RESP");
+
+                _logger?.LogInformation(@event, $"Requested file {firstRequested} is removed from queue");
+
                 string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
+                System.IO.File.Move(files[0], _options.RKK_EiResponcePath + firstRequested);
 
-                foreach (Match match in matches)
+                Stream fstream = new MemoryStream();
+
+                using (var stream = new FileStream(firstRequested, FileMode.Open, FileAccess.Read))
                 {
-                    foreach (string s in files)
-                    {
-                        if (s.IndexOf(match.Value) > 0)
-                        {
-                            Thread.Sleep(_options.SleepExperian);
-
-                            var fstream = System.IO.File.OpenRead(_options.RKK_EiResponcePath + match.Value);
-
-                            Response.Headers.Add("Content-Disposition", String.Format("attachment; Filename={0}; Filename*=UTF-8''{0}", match.Value));
-                            return File(fstream, "application/xml");
-                        }
-                    }
+                    stream.Position = 0;
+                    await stream.CopyToAsync(fstream);
                 }
+
+                System.IO.File.Delete(_options.RKK_EiResponcePath + firstRequested);
+
+                _logger?.LogInformation(@event, $"File {firstRequested} reading success");
+
+                fstream.Position = 0;
+
+                Response.Headers.Add("Content-Disposition", String.Format("attachment; Filename={0}; Filename*=UTF-8''{0}", firstRequested));
+                return File(fstream, "application/xml");
             }
             else
             {
