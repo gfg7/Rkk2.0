@@ -85,16 +85,6 @@ namespace PackageRequest.Controllers
 
             _logger?.LogInformation(@event, "CRE pushed request");
 
-
-            Request.Headers.TryGetValue("Content-Disposition", out var h);
-            string requestFilename = h;
-
-            _logger?.LogInformation(@event, $"request headers {requestFilename}");
-
-            string fileName = requestFilename.Substring(requestFilename.IndexOf("filename=") + 9).Trim();
-
-            _logger?.LogInformation(@event, $"request file {fileName}");
-
             return Ok();
 
             // записываем пришедший файл на винт
