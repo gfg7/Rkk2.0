@@ -61,12 +61,11 @@ namespace PackageRequest.Controllers
 
             if (actionFlag == 7)
             {
+                var k = xmlData.IndexOf("filename=") + 9;
+                var j = xmlData.IndexOf(".pem") + 8;
 
-                string cpString = Request.Headers["Content-Disposition"];
-                ContentDisposition contentDisposition = new ContentDisposition(cpString);
-                string requestFilename = contentDisposition.FileName;
 
-                // string requestFilename = xmlData.Substring(xmlData.IndexOf("filename=") + 9, xmlData.IndexOf(".pem") + 8 - xmlData.IndexOf("filename=") + 9);
+                string requestFilename = xmlData.Substring(k, j-k);
 
                 _requestStore.AddNewRequest(requestFilename);
 
