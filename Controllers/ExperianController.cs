@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -50,16 +51,22 @@ namespace PackageRequest.Controllers
             var streamReader = new StreamReader(Request.Body);
             string xmlData = await streamReader.ReadToEndAsync();
 
-            string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
-            string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
-            int actionFlag = int.Parse(actionFlagText.Trim());
+            // string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
+            // string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
+            // int actionFlag = int.Parse(actionFlagText.Trim());
+            int actionFlag = 7;
             string resp = "";
 
             _logger?.LogInformation(@event, $"Request action flag {actionFlag}");
 
             if (actionFlag == 7)
             {
-                string requestFilename = xmlData.Substring(xmlData.LastIndexOf("filename=")+9, xmlData.LastIndexOf(".pem") + 4 - xmlData.LastIndexOf("filename=")+9);
+
+                string cpString = Request.Headers["Content-Disposition"];
+                ContentDisposition contentDisposition = new ContentDisposition(cpString);
+                string requestFilename = contentDisposition.FileName;
+
+                // string requestFilename = xmlData.Substring(xmlData.IndexOf("filename=") + 9, xmlData.IndexOf(".pem") + 8 - xmlData.IndexOf("filename=") + 9);
 
                 _requestStore.AddNewRequest(requestFilename);
 
