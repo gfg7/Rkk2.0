@@ -51,10 +51,9 @@ namespace PackageRequest.Controllers
             var streamReader = new StreamReader(Request.Body);
             string xmlData = await streamReader.ReadToEndAsync();
 
-            // string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
-            // string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
-            // int actionFlag = int.Parse(actionFlagText.Trim());
-            int actionFlag = 7;
+            string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
+            string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
+            int actionFlag = int.Parse(actionFlagText.Trim());
             string resp = "";
 
             _logger?.LogInformation(@event, $"Request action flag {actionFlag}");
