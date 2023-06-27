@@ -59,7 +59,7 @@ namespace PackageRequest.Controllers
 
             if (actionFlag == 7)
             {
-                string requestFilename = xmlData.Substring(xmlData.LastIndexOf("filename="), xmlData.LastIndexOf(".pem") + 4);
+                string requestFilename = xmlData.Substring(xmlData.LastIndexOf("filename=")+9, xmlData.LastIndexOf(".pem") + 4 - xmlData.LastIndexOf("filename=")+9);
 
                 _requestStore.AddNewRequest(requestFilename);
 
