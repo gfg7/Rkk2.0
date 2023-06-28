@@ -150,7 +150,7 @@ namespace PackageRequest.Controllers
 
                 Stream fstream = new MemoryStream();
 
-                using (var stream = new FileStream(firstRequested, FileMode.Open, FileAccess.Read))
+                using (var stream = new FileStream(_options.RKK_EiResponcePath + firstRequested, FileMode.Open, FileAccess.Read))
                 {
                     stream.Position = 0;
                     await stream.CopyToAsync(fstream);
