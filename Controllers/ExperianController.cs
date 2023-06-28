@@ -69,7 +69,7 @@ namespace PackageRequest.Controllers
 
             if (actionFlag == 7)
             {
-                var k = xmlData.IndexOf("filename=") + 9;
+                var k = xmlData.IndexOf("filename=") + 10;
                 var j = xmlData.IndexOf(".pem") + 8;
 
 
