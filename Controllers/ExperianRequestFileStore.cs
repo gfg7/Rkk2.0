@@ -28,5 +28,9 @@ namespace PackageRequest.Controllers
 
             return filename;
         }
+
+        public void FlushStore() {
+            _eiRequestFiles.Clear();
+        }
     }
 }

@@ -34,6 +34,13 @@ namespace PackageRequest.Controllers
             }
         }
 
+        [HttpGet("/reset")]
+        public ActionResult Reset()
+        {
+            _requestStore.FlushStore();
+            return Ok();
+        }
+
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public async Task<ActionResult> OkbList()
@@ -51,6 +58,8 @@ namespace PackageRequest.Controllers
             var streamReader = new StreamReader(Request.Body);
             string xmlData = await streamReader.ReadToEndAsync();
 
+            _logger?.LogInformation(@event, "CRE request: " + xmlData);
+
             string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
             string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
             int actionFlag = int.Parse(actionFlagText.Trim());
@@ -64,7 +73,7 @@ namespace PackageRequest.Controllers
                 var j = xmlData.IndexOf(".pem") + 8;
 
 
-                string requestFilename = xmlData.Substring(k, j-k);
+                string requestFilename = xmlData.Substring(k, j - k);
 
                 _requestStore.AddNewRequest(requestFilename);
 
