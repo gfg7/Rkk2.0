@@ -148,22 +148,26 @@ namespace PackageRequest.Controllers
                 string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
                 System.IO.File.Move(files[0], _options.RKK_EiResponcePath + firstRequested);
 
-                Stream fstream = new MemoryStream();
+                // Stream fstream = new MemoryStream();
 
-                using (var stream = new FileStream(_options.RKK_EiResponcePath + firstRequested, FileMode.Open, FileAccess.Read))
-                {
-                    stream.Position = 0;
-                    await stream.CopyToAsync(fstream);
-                }
+                // using (var stream = new FileStream(_options.RKK_EiResponcePath + firstRequested, FileMode.Open, FileAccess.Read))
+                // {
+                //     stream.Position = 0;
+                //     await stream.CopyToAsync(fstream);
+                // }
 
                 System.IO.File.Delete(_options.RKK_EiResponcePath + firstRequested);
 
                 _logger?.LogInformation(@event, $"File {firstRequested} reading success");
 
-                fstream.Position = 0;
+                // fstream.Position = 0;
 
-                Response.Headers.Add("Content-Disposition", String.Format("attachment; Filename={0}; Filename*=UTF-8''{0}", firstRequested));
-                return File(fstream, "application/xml");
+                resp = Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(_options.RKK_EiResponcePath + firstRequested, CancellationToken.None));
+                return Ok(resp);
+
+
+                // Response.Headers.Add("Content-Disposition", String.Format("attachment; Filename={0}; Filename*=UTF-8''{0}", firstRequested));
+                // return File(fstream, "application/xml");
             }
             else
             {
