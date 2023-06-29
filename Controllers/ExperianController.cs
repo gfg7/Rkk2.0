@@ -38,6 +38,7 @@ namespace PackageRequest.Controllers
         public ActionResult Reset()
         {
             _requestStore.FlushStore();
+            _logger.LogInformation(new EventId(new Random().Next(), nameof(ExperianController)), "experian request store is reseted");
             return Ok();
         }
 
@@ -47,7 +48,6 @@ namespace PackageRequest.Controllers
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
-            // string id = DateTime.Now.ToString("yyyyMMddHHmmss") + "_" + Guid.NewGuid().ToString();
 
             if (Request.Body == null)
             {
@@ -58,7 +58,7 @@ namespace PackageRequest.Controllers
             var streamReader = new StreamReader(Request.Body);
             string xmlData = await streamReader.ReadToEndAsync();
 
-            _logger?.LogInformation(@event, "CRE request: " + xmlData);
+            // _logger?.LogInformation(@event, "CRE request: " + xmlData);
 
             string trimText = xmlData.Substring(xmlData.LastIndexOf("Content-Disposition: form-data; name=\"ActionFlag\"") + 51);
             string actionFlagText = trimText.Substring(0, trimText.IndexOf("--"));
@@ -142,6 +142,11 @@ namespace PackageRequest.Controllers
                 Thread.Sleep(_options.SleepExperian);
 
                 var firstRequested = _requestStore.ProcessRequest().Replace("CHD", "RESP");
+
+                if (string.IsNullOrEmpty(firstRequested)) {
+                    _logger?.LogError(@event, "ei request store is empty");
+                    throw new ArgumentNullException("ei request store is empty");
+                }
 
                 _logger?.LogInformation(@event, $"Requested file {firstRequested} is removed from queue");
 

@@ -43,7 +43,7 @@ namespace PackageRequest
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning(@event, ex, $"failed {request}");
+                _logger?.LogWarning(@event, ex, $"failed {request} \n {ex.InnerException?.StackTrace ?? ex.StackTrace}");
                 throw ex;
             }
         }
