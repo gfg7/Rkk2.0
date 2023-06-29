@@ -10,7 +10,7 @@ namespace PackageRequest
 {
     public static class LoggerConfiguration
     {
-        private static readonly Func<LogMessage, string> _format = x => $"{DateTime.Now} {x.EventId.Name} {x.LogLevel} {x.EventId.Id} : {x.Message}\n{x.Exception?.Message}";
+        private static readonly Func<LogMessage, string> _format = x => $"{DateTime.Now} {x.EventId.Name} {x.LogLevel} {x.EventId.Id} : {x.Message}\n{x.Exception?.Message}\n{x.Exception?.StackTrace}";
         private static readonly Func<string, string> _name = x => string.Format(x, DateTime.Now);
         public static ILoggingBuilder BuildLogger(this ILoggingBuilder builder, string logsFolder, string folder,
         string logName, string eventName, int maxFileCount, long sizeLimit, LogLevel minLevel)

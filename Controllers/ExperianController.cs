@@ -100,50 +100,51 @@ namespace PackageRequest.Controllers
                     "</s>\n" +
                     "</s>\n";
             }
-            else if (actionFlag == 9)
+            
+            if (actionFlag == 9)
             {
-                // string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
-
-                // var nameFiles = files.Select(x =>
-                // {
-                //     string[] words = x.Split(new char[] { '\\' });
-                //     return words.Last();
-                // });
-
                 var firstRequested = _requestStore.PeekRequest().Replace("CHD", "RESP");
 
-                _logger?.LogInformation(@event, $"Requested file {firstRequested} is used");
+                if (string.IsNullOrEmpty(firstRequested))
+                {
+                    resp = UnavailableResponse(date);
+                    _logger?.LogDebug(@event, "request store is empty");
+                }
+                else
+                {
+                    _logger?.LogInformation(@event, $"Requested file {firstRequested} is used");
 
-                string strXml = $"<s><a n = \"Name\">{firstRequested}</a></s>";
+                    string strXml = $"<s><a n = \"Name\">{firstRequested}</a></s>";
 
-                // nameFiles.ToList().ForEach(x => strXml += str.Replace("???", x) + '\n');
-
-                resp = "<s>\n" +
-                                  "<s n=\"Data\">\n" +
-                                      "<a n=\"ActionFlag\">9</a>\n" +
-                                      "<c n=\"Files\">\n" +
-                                      "<s>\n" +
-                                      "<c n= \"wlListOfFiles\">\n" +
-                                      strXml +
-                                      "</c>\n" +
-                                      "<a n=\"wlReturnCount\">" + 1 + "</a>\n" +
+                    resp = "<s>\n" +
+                                      "<s n=\"Data\">\n" +
+                                          "<a n=\"ActionFlag\">9</a>\n" +
+                                          "<c n=\"Files\">\n" +
+                                          "<s>\n" +
+                                          "<c n= \"wlListOfFiles\">\n" +
+                                          strXml +
+                                          "</c>\n" +
+                                          "<a n=\"wlReturnCount\">" + 1 + "</a>\n" +
+                                          "</s>\n" +
+                                          "</c>\n" +
+                                          "<a n=\"StreamID\">30564169</a>\n" +
+                                          "<a n=\"ValidationErrors\"/>\n" +
+                                          "<a n=\"errorCode\">0</a>\n" +
+                                          "<a n=\"responseDate\">" + date.ToString("yyyyMMddhhmmss") + "</a>\n" +
                                       "</s>\n" +
-                                      "</c>\n" +
-                                      "<a n=\"StreamID\">30564169</a>\n" +
-                                      "<a n=\"ValidationErrors\"/>\n" +
-                                      "<a n=\"errorCode\">0</a>\n" +
-                                      "<a n=\"responseDate\">" + date.ToString("yyyyMMddhhmmss") + "</a>\n" +
-                                  "</s>\n" +
-                              "</s>\n";
+                                  "</s>\n";
+                }
             }
-            else if (actionFlag == 1)
+            
+            if (actionFlag == 1)
             {
 
                 Thread.Sleep(_options.SleepExperian);
 
                 var firstRequested = _requestStore.ProcessRequest().Replace("CHD", "RESP");
 
-                if (string.IsNullOrEmpty(firstRequested)) {
+                if (string.IsNullOrEmpty(firstRequested))
+                {
                     _logger?.LogError(@event, "ei request store is empty");
                     throw new ArgumentNullException("ei request store is empty");
                 }
@@ -151,7 +152,17 @@ namespace PackageRequest.Controllers
                 _logger?.LogInformation(@event, $"Requested file {firstRequested} is removed from queue");
 
                 string[] files = Directory.GetFiles(_options.RKK_EiResponcePath); //Берем список файлов для ответа отсюда
-                System.IO.File.Move(files[0], _options.RKK_EiResponcePath + firstRequested);
+
+                var responseFile = files.FirstOrDefault(x => Path.GetFileName(x) == firstRequested);
+
+                _logger?.LogDebug(@event, $"searching for {firstRequested} in response folder");
+
+                if (responseFile is null)
+                {
+                    responseFile = _options.RKK_EiResponcePath + firstRequested;
+                    System.IO.File.Move(files[0], responseFile);
+                    _logger?.LogDebug(@event, "no prepared file, renaming stub file");
+                }
 
                 // Stream fstream = new MemoryStream();
 
@@ -161,13 +172,15 @@ namespace PackageRequest.Controllers
                 //     await stream.CopyToAsync(fstream);
                 // }
 
-                System.IO.File.Delete(_options.RKK_EiResponcePath + firstRequested);
+                resp = Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(responseFile, CancellationToken.None));
 
                 _logger?.LogInformation(@event, $"File {firstRequested} reading success");
 
                 // fstream.Position = 0;
 
-                resp = Convert.ToBase64String(await System.IO.File.ReadAllBytesAsync(_options.RKK_EiResponcePath + firstRequested, CancellationToken.None));
+
+                System.IO.File.Delete(responseFile);
+
                 return Ok(resp);
 
 
@@ -176,7 +189,14 @@ namespace PackageRequest.Controllers
             }
             else
             {
-                resp = "<s>\n" +
+                resp = UnavailableResponse(date);
+            }
+
+            var bytes = UTF8Encoding.UTF8.GetBytes(resp);
+            return File(new MemoryStream(bytes), "application/xml");
+        }
+
+        private string UnavailableResponse(DateTime date) => "<s>\n" +
                     "<c n=\"ValidationErrors\">\n" +
                     "<s>\n" +
                     "<a n=\"number\">503 Service Unavailable</a>\n" +
@@ -186,10 +206,5 @@ namespace PackageRequest.Controllers
                     "<a n=\"responseDate\">" + date.ToString("yyyyMMddhhmmss") + "</a>\n" +
                     "<a n=\"streamID\">30564169</a>\n" +
                     "</s>\n";
-            }
-
-            var bytes = UTF8Encoding.UTF8.GetBytes(resp);
-            return File(new MemoryStream(bytes), "application/xml");
-        }
     }
 }
