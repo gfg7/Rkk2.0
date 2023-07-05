@@ -100,8 +100,7 @@ namespace PackageRequest.Controllers
                     "</s>\n" +
                     "</s>\n";
             }
-            
-            if (actionFlag == 9)
+            else if (actionFlag == 9)
             {
                 var firstRequested = _requestStore.PeekRequest().Replace("CHD", "RESP");
 
@@ -115,6 +114,8 @@ namespace PackageRequest.Controllers
                     _logger?.LogInformation(@event, $"Requested file {firstRequested} is used");
 
                     string strXml = $"<s><a n = \"Name\">{firstRequested}</a></s>";
+
+                    // nameFiles.ToList().ForEach(x => strXml += str.Replace("???", x) + '\n');
 
                     resp = "<s>\n" +
                                       "<s n=\"Data\">\n" +
@@ -135,8 +136,7 @@ namespace PackageRequest.Controllers
                                   "</s>\n";
                 }
             }
-            
-            if (actionFlag == 1)
+            else if (actionFlag == 1)
             {
 
                 Thread.Sleep(_options.SleepExperian);

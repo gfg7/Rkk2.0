@@ -90,8 +90,8 @@ namespace PackageRequest.Controllers
                 _logger?.LogInformation(@event, $"Delete request {e.FullPath}");
                 File.Copy(response, _options.FtpDirectoryOut + newResponseName);
                 _logger?.LogInformation(@event, $"New reponse file is moved to ftp {_options.FtpDirectoryOut + newResponseName}");
-                File.Delete(response);
-                _logger?.LogInformation(@event, $"Delete used response {response}");
+                File.Move(response, _options.RKK_EquifaxUsedResponcePath + Path.GetFileName(response));
+                _logger?.LogInformation(@event, $"Response {response} is moved to used {_options.RKK_EquifaxUsedResponcePath + Path.GetFileName(response)}");
             }
             catch (Exception ex)
             {

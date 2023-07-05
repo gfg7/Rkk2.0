@@ -19,8 +19,11 @@ namespace PackageRequest
         public string FtpDirectoryIn { get; set; }
         public string FtpDirectoryOut { get; set; }
         public string RKK_NbchResponcePath { get; set; }
+        public string RKK_NbchUsedResponcePath { get; set; }
         public string RKK_EiResponcePath { get; set; }
+        public string RKK_EiUsedResponcePath { get; set; }
         public string RKK_EquifaxResponcePath { get; set; }
+        public string RKK_EquifaxUsedResponcePath { get; set; }
         public string ScoringEiResponcePath { get; set; }
         public string ScoringEquifaxResponcePath { get; set; }
     }

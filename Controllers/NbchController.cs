@@ -62,10 +62,10 @@ namespace PackageRequest.Controllers
                     stream.Position = 0;
                     await stream.CopyToAsync(fstream);
                 }
-
-                System.IO.File.Delete(newResponseName);
-
                 _logger?.LogInformation(@event, $"File {newResponseName} reading success");
+
+                System.IO.File.Move(newResponseName, _options.RKK_NbchUsedResponcePath + Path.GetFileName(files[0]));
+                _logger?.LogInformation(@event, $"Response {files[0]} is moved to used {_options.RKK_NbchUsedResponcePath + Path.GetFileName(files[0])}");
 
                 fstream.Position = 0;
                 return File(fstream, "application/pkcs7-mime");
