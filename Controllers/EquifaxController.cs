@@ -40,7 +40,7 @@ namespace PackageRequest.Controllers
             {
                 _logger?.LogCritical($"Response files not found in {_options.RKK_EquifaxResponcePath}");
 
-                return Task.FromException(new Exception($"Files not found in {_options.RKK_EquifaxResponcePath}"));
+                //return Task.FromException(new Exception($"Files not found in {_options.RKK_EquifaxResponcePath}"));
             }
 
             _watcher = new FileSystemWatcher(_options.FtpDirectoryIn)
@@ -88,6 +88,15 @@ namespace PackageRequest.Controllers
             {
                 File.Delete(e.FullPath);
                 _logger?.LogInformation(@event, $"Delete request {e.FullPath}");
+
+                var statReq = e.FullPath.Replace("_tmp", "");
+
+                if (File.Exists(statReq))
+                {
+                    File.Delete(statReq);
+                    _logger?.LogInformation(@event, $"Delete request {statReq}");
+                }
+
                 File.Copy(response, _options.FtpDirectoryOut + newResponseName);
                 _logger?.LogInformation(@event, $"New reponse file is moved to ftp {_options.FtpDirectoryOut + newResponseName}");
                 File.Move(response, _options.RKK_EquifaxUsedResponcePath + Path.GetFileName(response));
