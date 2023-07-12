@@ -54,10 +54,10 @@ namespace PackageRequest.Controllers
                 throw new FileNotFoundException();
             }
 
-            var takenFile = responseFile + $"_taken_by_{@event}";
-            System.IO.File.Move(responseFile, responseFile);
+            var takenFile = _options.RKK_NbchTakenResponcePath + Path.GetFileName(responseFile + $"_{@event.Id}");
+            System.IO.File.Move(responseFile, takenFile);
 
-            _logger?.LogInformation(@event, $"File {responseFile} is taken by event {@event}");
+            _logger?.LogInformation(@event, $"File {responseFile} is taken {takenFile}");
 
             await Task.Delay(_options.SleepNbch);
 
