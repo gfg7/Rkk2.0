@@ -37,37 +37,48 @@ namespace PackageRequest.Controllers
         [Route("{fileName}")]
         public async Task<ActionResult> NbchGet([FromRoute] string fileName)
         {
-            string[] files = Directory.GetFiles(_options.RKK_NbchResponcePath);
             var @event = _event;
 
-            if (files.Length == 0)
+            _logger?.LogInformation(@event, $"CRE ask file {fileName}");
+
+            fileName = fileName.Replace(".reject", "");
+
+            Response.Headers.Add("Accept-Ranges", "bytes");
+
+            string[] files = Directory.GetFiles(_options.RKK_NbchResponcePath);
+            var responseFile = files.FirstOrDefault(x => !x.Contains("taken"));
+
+            if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
             {
                 _logger?.LogError(@event, $"Files in response folder {_options.RKK_NbchResponcePath} not found");
                 throw new FileNotFoundException();
             }
 
+            var takenFile = responseFile + $"_taken_by_{@event}";
+            System.IO.File.Move(responseFile, responseFile);
+
+            _logger?.LogInformation(@event, $"File {responseFile} is taken by event {@event}");
+
             await Task.Delay(_options.SleepNbch);
 
-            fileName = fileName.Replace(".reject","");
-
-            Response.Headers.Add("Accept-Ranges", "bytes");
+            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), fileName);
 
             try
             {
                 Stream fstream = new MemoryStream();
 
-                var newResponseName = Path.Join(Path.GetDirectoryName(files[0]), fileName);
-                System.IO.File.Move(files[0], newResponseName);
+                System.IO.File.Move(takenFile, newResponseName);
 
                 using (var stream = new FileStream(newResponseName, FileMode.Open, FileAccess.Read))
                 {
                     stream.Position = 0;
                     await stream.CopyToAsync(fstream);
                 }
+
                 _logger?.LogInformation(@event, $"File {newResponseName} reading success");
 
-                System.IO.File.Move(newResponseName, _options.RKK_NbchUsedResponcePath + Path.GetFileName(files[0]));
-                _logger?.LogInformation(@event, $"Response {files[0]} is moved to used {_options.RKK_NbchUsedResponcePath + Path.GetFileName(files[0])}");
+                System.IO.File.Move(newResponseName, _options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile));
+                _logger?.LogInformation(@event, $"Response {responseFile} is moved to used {_options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile)}");
 
                 fstream.Position = 0;
                 return File(fstream, "application/pkcs7-mime");
@@ -75,6 +86,9 @@ namespace PackageRequest.Controllers
             catch (Exception ex)
             {
                 _logger?.LogWarning(@event, ex, $"File {fileName} reading fail");
+                System.IO.File.Move(newResponseName, responseFile);
+                _logger?.LogWarning(@event, ex, $"Taken file {fileName} is released -> {responseFile}");
+                
                 throw new FileNotFoundException();
             }
         }
