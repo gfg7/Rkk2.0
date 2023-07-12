@@ -48,6 +48,8 @@ namespace PackageRequest.Controllers
 
             await Task.Delay(_options.SleepNbch);
 
+            fileName = fileName.Replace(".reject","");
+
             Response.Headers.Add("Accept-Ranges", "bytes");
 
             try
