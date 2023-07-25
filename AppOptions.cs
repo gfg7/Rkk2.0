@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 
@@ -5,8 +6,6 @@ namespace PackageRequest
 {
     public class AppOptions
     {
-        public bool UseCrypto { get; set; } 
-        public string Thumprint { get; set; }
         public bool LogIncomming { get; set; }
         public bool Loging { get; set; }
         public string LogsPath { get; set; }
@@ -27,5 +26,6 @@ namespace PackageRequest
         public string RKK_EquifaxUsedResponcePath { get; set; }
         public string ScoringEiResponcePath { get; set; }
         public string ScoringEquifaxResponcePath { get; set; }
+        public bool EquifaxEnabled {get;set;}
     }
 }

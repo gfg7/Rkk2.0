@@ -1,6 +1,6 @@
-using System.IO;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -11,10 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using NReco.Logging.File;
 using PackageRequest;
 using PackageRequest.Controllers;
-using NReco.Logging.File;
-using Microsoft.OpenApi.Models;
 
 namespace Rkk2._0
 {
@@ -42,13 +42,17 @@ namespace Rkk2._0
             services.AddSingleton<ExperianRequestFileStore>();
             services.Configure<AppOptions>(Configuration);
             services.AddControllers();
-            services.AddHostedService<EquifaxController>();
             services.AddHealthChecks();
-            using (var serviceProvider= services.BuildServiceProvider())
+            using (var serviceProvider = services.BuildServiceProvider())
             {
                 _options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
             }
-            
+
+            if (_options.EquifaxEnabled)
+            {
+                services.AddHostedService<EquifaxController>();
+            }
+
             services.AddLogging(loggingBuilder =>
             {
                 var logsFolder = _options.LogsPath;
@@ -75,7 +79,7 @@ namespace Rkk2._0
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
-            app.UseSwagger(c=>
+            app.UseSwagger(c =>
             {
                 c.PreSerializeFilters.Add((swagger, httpReq) =>
                 {
