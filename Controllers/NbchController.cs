@@ -63,34 +63,38 @@ namespace PackageRequest.Controllers
 
             var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), fileName);
 
-            try
+            for (int retry = 0; retry <= (_options.NbchRetryCount ?? 1);)
             {
-                Stream fstream = new MemoryStream();
-
-                System.IO.File.Move(takenFile, newResponseName);
-
-                using (var stream = new FileStream(newResponseName, FileMode.Open, FileAccess.Read))
+                try
                 {
-                    stream.Position = 0;
-                    await stream.CopyToAsync(fstream);
+                    Stream fstream = new MemoryStream();
+
+                    System.IO.File.Move(takenFile, newResponseName);
+
+                    using (var stream = new FileStream(newResponseName, FileMode.Open, FileAccess.Read))
+                    {
+                        stream.Position = 0;
+                        await stream.CopyToAsync(fstream);
+                    }
+
+                    _logger?.LogInformation(@event, $"File {newResponseName} reading success");
+
+                    System.IO.File.Move(newResponseName, _options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile));
+                    _logger?.LogInformation(@event, $"Response {responseFile} is moved to used {_options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile)}");
+
+                    fstream.Position = 0;
+                    return File(fstream, "application/pkcs7-mime");
                 }
-
-                _logger?.LogInformation(@event, $"File {newResponseName} reading success");
-
-                System.IO.File.Move(newResponseName, _options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile));
-                _logger?.LogInformation(@event, $"Response {responseFile} is moved to used {_options.RKK_NbchUsedResponcePath + Path.GetFileName(responseFile)}");
-
-                fstream.Position = 0;
-                return File(fstream, "application/pkcs7-mime");
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(@event, ex, $"File {fileName} fail - iteration {retry}");
+                    System.IO.File.Move(newResponseName, responseFile);
+                    _logger?.LogWarning(@event, ex, $"Taken file {fileName} is released -> {responseFile}");
+                    retry++;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(@event, ex, $"File {fileName} reading fail");
-                System.IO.File.Move(newResponseName, responseFile);
-                _logger?.LogWarning(@event, ex, $"Taken file {fileName} is released -> {responseFile}");
-                
-                throw new FileNotFoundException();
-            }
+
+            throw new FileNotFoundException();
         }
 
         [HttpPost]

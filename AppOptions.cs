@@ -18,6 +18,7 @@ namespace PackageRequest
         public string FtpDirectoryIn { get; set; }
         public string FtpDirectoryOut { get; set; }
         public string RKK_NbchResponcePath { get; set; }
+        public int? NbchRetryCount { get; set; }
         public string RKK_NbchTakenResponcePath { get; set; }
         public string RKK_NbchUsedResponcePath { get; set; }
         public string RKK_EiResponcePath { get; set; }
