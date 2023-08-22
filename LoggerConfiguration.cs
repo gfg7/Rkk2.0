@@ -33,7 +33,7 @@ namespace PackageRequest
                 fileLoggerOpts.MinLevel = minLevel;
 
                 fileLoggerOpts.HandleFileError = (err) => {
-                    err.UseNewLogFileName(Path.GetFileNameWithoutExtension(err.LogFileName) + "_alt" + Path.GetExtension(err.LogFileName));
+                    err.UseNewLogFileName(Path.GetFullPath(err.LogFileName).Replace(".log", "_alt.log"));
                 };
 
                 fileLoggerOpts.FilterLogEntry = (msg) =>
