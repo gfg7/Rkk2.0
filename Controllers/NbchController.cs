@@ -34,14 +34,14 @@ namespace PackageRequest.Controllers
 
         [HttpGet]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        [Route("{fileName}")]
-        public async Task<ActionResult> NbchGet([FromRoute] string fileName)
+        [Route("{filename}")]
+        public async Task<ActionResult> NbchGet([FromRoute] string filename)
         {
             var @event = _event;
 
-            _logger?.LogInformation(@event, $"CRE ask file {fileName}");
+            _logger?.LogInformation(@event, $"CRE ask file {filename}");
 
-            fileName = fileName.Replace(".reject", "");
+            filename = filename.Replace(".reject", "");
 
             Response.Headers.Add("Accept-Ranges", "bytes");
 
@@ -61,7 +61,7 @@ namespace PackageRequest.Controllers
 
             await Task.Delay(_options.SleepNbch);
 
-            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), fileName);
+            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), filename);
 
             for (int retry = 0; retry <= (_options.NbchRetryCount ?? 1);)
             {
@@ -87,9 +87,9 @@ namespace PackageRequest.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogWarning(@event, ex, $"File {fileName} fail - iteration {retry}");
+                    _logger?.LogWarning(@event, ex, $"File {filename} fail - iteration {retry}");
                     System.IO.File.Move(newResponseName, responseFile);
-                    _logger?.LogWarning(@event, ex, $"Taken file {fileName} is released -> {responseFile}");
+                    _logger?.LogWarning(@event, ex, $"Taken file {filename} is released -> {responseFile}");
                     retry++;
                 }
             }

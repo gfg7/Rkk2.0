@@ -5,12 +5,15 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PackageRequest;
 
 namespace Rkk2._0.Controllers
 {
+    [ApiController]
+    [Route("[controller]")]
     public class EquifaxScoringController : ControllerBase
     {
         private readonly AppOptions _options;
@@ -27,73 +30,67 @@ namespace Rkk2._0.Controllers
                 _logger = logger;
             }
 
-            _listReponse = new Root()
-            {
-                numDirs = 1,
-                numFiles = 1,
-                path = "/",
-                isDir = true
-            };
+            _listReponse = new Root();
         }
 
-        [HttpPost]//2
+        [HttpPost]//2?
+        [Route("/")]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
 
-        public async Task<ActionResult> Upload()
+        public ActionResult Upload()
         {
             _logger?.LogInformation(_event, "CRE pushed request");
             return Ok();
         }
 
         [HttpGet("/api/auth/get")]//1
-        public async Task<ActionResult> Auth()
+        public ActionResult Auth()
         {
             _logger?.LogInformation(_event, "CRE asked for auth token");
             return Ok(Guid.NewGuid());
         }
 
-        [HttpGet("/api/resource/{filename}")]//3
-        public async Task<ActionResult> GetResource([FromRoute] string fileName)
+        [HttpGet]
+        [Route("/api/resource/{filename}")]//3
+        public ActionResult GetResource([FromRoute] string filename)
         {
-            _logger?.LogInformation(_event, "CRE asked for list of files");
+            _logger?.LogInformation(_event, $"CRE asked for list of files {filename}");
 
             var item = new Item()
             {
-                path = $"/{fileName}",
-                virtualPath = $"/{fileName}",
-                name = fileName,
-                size = 214748364,
-                extension = ".XML",
-                modified = DateTime.Now,
-                isDir = false,
-                type = "blob"
+                path = $"/{filename}",
+                virtualPath = $"/{filename}",
+                name = filename,
+                extension = Path.GetExtension(filename)
             };
 
             var response = _listReponse;
-            response.name = fileName;
+            response.name = filename;
             response.items.Add(item);
 
             return Ok(response);
         }
 
 
-        [HttpPost("/api/resource/{filename}")]//3
-        public async Task<ActionResult> PostResource([FromRoute] string fileName)
+        [HttpPost]
+        [Route("/api/resource/{filename}")]//2?
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
+        public ActionResult PostResource([FromRoute] string filename)
         {
-            _logger?.LogInformation(_event, "CRE uploaded file");
+            _logger?.LogInformation(_event, $"CRE uploaded file {filename}");
             return Ok();
         }
 
         [HttpGet]//4
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        [Route("/api/download/{fileName}")]
-        public async Task<ActionResult> EquifaxScoringGet([FromRoute] string fileName)
+        [Route("/api/download/{filename}")]
+        public async Task<ActionResult> EquifaxScoringGet([FromRoute] string filename)
         {
             var @event = _event;
 
-            _logger?.LogInformation(@event, $"CRE ask file {fileName}");
+            _logger?.LogInformation(@event, $"CRE ask file {filename}");
 
-            fileName = fileName.Replace(".reject", "");
+            filename = filename.Replace(".reject", "");
 
             Response.Headers.Add("Accept-Ranges", "bytes");
 
@@ -113,7 +110,7 @@ namespace Rkk2._0.Controllers
 
             await Task.Delay(_options.SleepNbch);
 
-            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), fileName);
+            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), filename);
 
             for (int retry = 0; retry <= (_options.EquifaxScoringRetryCount ?? 1);)
             {
@@ -139,9 +136,9 @@ namespace Rkk2._0.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogWarning(@event, ex, $"File {fileName} fail - iteration {retry}");
+                    _logger?.LogWarning(@event, ex, $"File {filename} fail - iteration {retry}");
                     System.IO.File.Move(newResponseName, responseFile);
-                    _logger?.LogWarning(@event, ex, $"Taken file {fileName} is released -> {responseFile}");
+                    _logger?.LogWarning(@event, ex, $"Taken file {filename} is released -> {responseFile}");
                     retry++;
                 }
             }
@@ -156,34 +153,34 @@ namespace Rkk2._0.Controllers
         public string path { get; set; }
         public string virtualPath { get; set; }
         public string name { get; set; }
-        public int size { get; set; }
+        public int size { get; set; } = 214748364;
         public string extension { get; set; }
-        public DateTime modified { get; set; }
+        public DateTime modified { get; set; } = DateTime.Now;
         public int mode { get; set; }
-        public bool isDir { get; set; }
-        public string type { get; set; }
+        public bool isDir { get; set; } = false;
+        public string type { get; set; } = "blob";
     }
 
     public class Sorting
     {
-        public string by { get; set; }
-        public bool asc { get; set; }
+        public string by { get; set; } = "name";
+        public bool asc { get; set; } = false;
     }
 
     public class Root
     {
-        public List<Item> items { get; set; }
-        public int numDirs { get; set; }
-        public int numFiles { get; set; }
-        public Sorting sorting { get; set; }
-        public string path { get; set; }
-        public string virtualPath { get; set; }
-        public string name { get; set; }
-        public int size { get; set; }
+        public List<Item> items { get; set; } = new List<Item>();
+        public int numDirs { get; set; } = 1;
+        public int numFiles { get; set; } = 1;
+        public Sorting sorting { get; set; } = new Sorting();
+        public string path { get; set; } = "/";
+        public string virtualPath { get; set; } = "/";
+        public string name { get; set; } = "scoring-test";
+        public int size { get; set; } = 214748364;
         public string extension { get; set; }
-        public DateTime modified { get; set; }
+        public DateTime modified { get; set; } = DateTime.Now;
         public int mode { get; set; }
-        public bool isDir { get; set; }
+        public bool isDir { get; set; } = true;
         public string type { get; set; }
     }
     #endregion
