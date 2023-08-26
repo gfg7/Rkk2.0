@@ -41,10 +41,10 @@ namespace Rkk2._0.Controllers
         }
 
         [HttpGet]
-        [Route("/api/resource/{filename}")]//3
-        public ActionResult GetResource([FromRoute] string filename)
+        [Route("/api/resource/{folder}/{filename}")]//3
+        public ActionResult GetResource([FromRoute] string folder, [FromRoute] string filename)
         {
-            _logger?.LogInformation(_event, $"CRE asked for list of files {filename}");
+            _logger?.LogInformation(_event, $"CRE asked for list of files {filename} in folder {folder}");
 
             var item = new Item()
             {
@@ -63,9 +63,9 @@ namespace Rkk2._0.Controllers
 
 
         [HttpPost]
-        [Route("/api/resource/{filename}")]//2?
+        [Route("/api/resource/{folder}/{filename}")]//2?
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public ActionResult PostResource([FromRoute] string filename)
+        public ActionResult PostResource([FromRoute] string folder, [FromRoute] string filename)
         {
             _logger?.LogInformation(_event, $"CRE uploaded file {filename}");
             return Ok();
