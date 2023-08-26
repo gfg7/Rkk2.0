@@ -102,8 +102,8 @@ namespace Rkk2._0.Controllers
 
         [HttpGet]//4
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        [Route("/api/download/{filename}")]
-        public async Task<ActionResult> EquifaxScoringGet([FromRoute] string filename)
+        [Route("/api/download/{folder}/{filename}")]
+        public async Task<ActionResult> EquifaxScoringGet([FromRoute] string folder, [FromRoute] string filename)
         {
             var @event = _event;
 
