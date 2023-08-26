@@ -33,17 +33,7 @@ namespace Rkk2._0.Controllers
             _listReponse = new Root();
         }
 
-        [HttpPost]//2?
-        [Route("/")]
-        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-
-        public ActionResult Upload()
-        {
-            _logger?.LogInformation(_event, "CRE pushed request");
-            return Ok();
-        }
-
-        [HttpGet("/api/auth/get")]//1
+        [HttpPost("/api/auth/get")]//1
         public ActionResult Auth()
         {
             _logger?.LogInformation(_event, "CRE asked for auth token");
