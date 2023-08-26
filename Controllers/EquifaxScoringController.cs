@@ -114,7 +114,7 @@ namespace Rkk2._0.Controllers
             Response.Headers.Add("Accept-Ranges", "bytes");
 
             string[] files = Directory.GetFiles(_options.ScoringEquifaxRTakenResponcePath);
-            var responseFile = files.FirstOrDefault(x=> x == filename);
+            var responseFile = files.FirstOrDefault(x=> Path.GetFileName(x) == filename);
 
             if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
             {
