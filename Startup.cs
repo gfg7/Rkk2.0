@@ -15,6 +15,7 @@ using Microsoft.OpenApi.Models;
 using NReco.Logging.File;
 using PackageRequest;
 using PackageRequest.Controllers;
+using Rkk2._0.Controllers;
 
 namespace Rkk2._0
 {
@@ -66,6 +67,7 @@ namespace Rkk2._0
                     loggingBuilder.BuildLogger(logsFolder, "Experian", "Experian", nameof(ExperianController), maxFileCount, sizeLimit, minLevel);
                     loggingBuilder.BuildLogger(logsFolder, "Equifax", "Equifax", nameof(EquifaxController), maxFileCount, sizeLimit, minLevel);
                     loggingBuilder.BuildLogger(logsFolder, "ExperianScoring", "ExperianScoring", nameof(ExperianScoringController), maxFileCount, sizeLimit, minLevel);
+                    loggingBuilder.BuildLogger(logsFolder, "EquifaxScoringController", "EquifaxScoringController", nameof(EquifaxScoringController), maxFileCount, sizeLimit, minLevel);
                 }
 
                 if (_options.LogIncomming)
