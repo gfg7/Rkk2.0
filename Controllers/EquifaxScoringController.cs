@@ -41,22 +41,28 @@ namespace Rkk2._0.Controllers
         }
 
         [HttpGet]
-        [Route("/api/resource/{folder}/{filename}")]//3
-        public ActionResult GetResource([FromRoute] string folder, [FromRoute] string filename)
+        [Route("/api/resource/{folder}")]//3
+        public ActionResult GetResource([FromRoute] string folder)
         {
-            _logger?.LogInformation(_event, $"CRE asked for list of files {filename} in folder {folder}");
-
-            var item = new Item()
-            {
-                path = $"/{filename}",
-                virtualPath = $"/{filename}",
-                name = filename,
-                extension = Path.GetExtension(filename)
-            };
+            _logger?.LogInformation(_event, $"CRE asked for list of files in folder {folder}");
 
             var response = _listReponse;
-            response.name = filename;
-            response.items.Add(item);
+            response.name = folder;
+
+            string[] files = Directory.GetFiles(_options.ScoringEquifaxRTakenResponcePath);
+
+            foreach (var item in files)
+            {
+                var filename = Path.GetFileName(item);
+
+                response.items.Add(new Item()
+                {
+                    path = $"/{filename}",
+                    virtualPath = $"/{filename}",
+                    name = filename,
+                    extension = Path.GetExtension(filename)
+                });
+            }
 
             return Ok(response);
         }
@@ -67,7 +73,30 @@ namespace Rkk2._0.Controllers
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public ActionResult PostResource([FromRoute] string folder, [FromRoute] string filename)
         {
+            var @event = _event;
+
             _logger?.LogInformation(_event, $"CRE uploaded file {filename}");
+
+            string[] files = Directory.GetFiles(_options.ScoringEquifaxResponcePath);
+            var responseFile = files.FirstOrDefault(x => !x.Contains("taken"));
+
+            if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
+            {
+                _logger?.LogError(@event, $"Files in response folder {_options.ScoringEquifaxResponcePath} not found");
+                throw new FileNotFoundException();
+            }
+
+            var requestFileName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(filename)));//убирает .zip.sgn.enc
+            var takenFile = _options.ScoringEquifaxRTakenResponcePath + Path.GetFileName($"outbox_{requestFileName}_out.zip.sgn.enc");
+            System.IO.File.Copy(responseFile, takenFile);
+
+            _logger?.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
+
+            var usedFile = _options.ScoringEquifaxRUsedResponcePath + Path.GetFileName(responseFile);
+            System.IO.File.Move(responseFile, usedFile);
+
+            _logger?.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
+
             return Ok();
         }
 
@@ -84,23 +113,16 @@ namespace Rkk2._0.Controllers
 
             Response.Headers.Add("Accept-Ranges", "bytes");
 
-            string[] files = Directory.GetFiles(_options.ScoringEquifaxResponcePath);
-            var responseFile = files.FirstOrDefault(x => !x.Contains("taken"));
+            string[] files = Directory.GetFiles(_options.ScoringEquifaxRTakenResponcePath);
+            var responseFile = files.FirstOrDefault(x=> x == filename);
 
             if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
             {
-                _logger?.LogError(@event, $"Files in response folder {_options.ScoringEquifaxResponcePath} not found");
+                _logger?.LogError(@event, $"Files in response folder {_options.ScoringEquifaxRTakenResponcePath} not found");
                 throw new FileNotFoundException();
             }
 
-            var takenFile = _options.ScoringEquifaxRTakenResponcePath + Path.GetFileName(responseFile + $"_{@event.Id}");
-            System.IO.File.Move(responseFile, takenFile);
-
-            _logger?.LogInformation(@event, $"File {responseFile} is taken {takenFile}");
-
             await Task.Delay(_options.SleepNbch);
-
-            var newResponseName = Path.Join(Path.GetDirectoryName(takenFile), filename);
 
             for (int retry = 0; retry <= (_options.EquifaxScoringRetryCount ?? 1);)
             {
@@ -108,17 +130,15 @@ namespace Rkk2._0.Controllers
                 {
                     Stream fstream = new MemoryStream();
 
-                    System.IO.File.Move(takenFile, newResponseName);
-
-                    using (var stream = new FileStream(newResponseName, FileMode.Open, FileAccess.Read))
+                    using (var stream = new FileStream(responseFile, FileMode.Open, FileAccess.Read))
                     {
                         stream.Position = 0;
                         await stream.CopyToAsync(fstream);
                     }
 
-                    _logger?.LogInformation(@event, $"File {newResponseName} reading success");
+                    _logger?.LogInformation(@event, $"File {responseFile} reading success");
 
-                    System.IO.File.Move(newResponseName, _options.ScoringEquifaxResponcePath + Path.GetFileName(responseFile));
+                    System.IO.File.Move(responseFile, _options.ScoringEquifaxResponcePath + Path.GetFileName(responseFile));
                     _logger?.LogInformation(@event, $"Response {responseFile} is moved to used {_options.ScoringEquifaxRUsedResponcePath + Path.GetFileName(responseFile)}");
 
                     fstream.Position = 0;
@@ -127,8 +147,6 @@ namespace Rkk2._0.Controllers
                 catch (Exception ex)
                 {
                     _logger?.LogWarning(@event, ex, $"File {filename} fail - iteration {retry}");
-                    System.IO.File.Move(newResponseName, responseFile);
-                    _logger?.LogWarning(@event, ex, $"Taken file {filename} is released -> {responseFile}");
                     retry++;
                 }
             }
