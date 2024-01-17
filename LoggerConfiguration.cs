@@ -1,9 +1,6 @@
-using System.Net.Mime;
 using System;
-using System.Data;
 using System.IO;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NReco.Logging.File;
 
 namespace PackageRequest

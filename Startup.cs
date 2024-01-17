@@ -1,21 +1,15 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using NReco.Logging.File;
 using PackageRequest;
-using PackageRequest.Controllers;
-using Rkk2._0.Controllers;
+using PackageRequest.Controllers.Ei;
+using PackageRequest.Controllers.Equifax;
+using PackageRequest.Controllers.Nbki;
+using Rkk2._0.Controllers.Equifax;
 
 namespace Rkk2._0
 {
@@ -40,39 +34,42 @@ namespace Rkk2._0
                 });
             });
 
-            services.AddSingleton<ExperianRequestFileStore>();
             services.Configure<AppOptions>(Configuration);
             services.AddControllers();
             services.AddHealthChecks();
-            using (var serviceProvider = services.BuildServiceProvider())
-            {
-                _options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-            }
 
-            if (_options.EquifaxEnabled)
+            _options = Configuration.Get<AppOptions>();
+
+            if (_options.FTPEquifaxEnabled)
             {
-                services.AddHostedService<EquifaxController>();
+                services.AddHostedService<EquifaxFTPService>();
             }
 
             services.AddLogging(loggingBuilder =>
             {
-                var logsFolder = _options.LogsPath;
-                var minLevel = _options.MinLevel;
-                var sizeLimit = _options.FileSizeLimitBytes;
-                var maxFileCount = _options.MaxRollingFiles;
 
-                if (_options.Loging)
-                {
-                    loggingBuilder.BuildLogger(logsFolder, "Nbch", "Nbch", nameof(NbchController), maxFileCount, sizeLimit, minLevel);
-                    loggingBuilder.BuildLogger(logsFolder, "Experian", "Experian", nameof(ExperianController), maxFileCount, sizeLimit, minLevel);
-                    loggingBuilder.BuildLogger(logsFolder, "Equifax", "Equifax", nameof(EquifaxController), maxFileCount, sizeLimit, minLevel);
-                    loggingBuilder.BuildLogger(logsFolder, "ExperianScoring", "ExperianScoring", nameof(ExperianScoringController), maxFileCount, sizeLimit, minLevel);
-                    loggingBuilder.BuildLogger(logsFolder, "EquifaxScoringController", "EquifaxScoringController", nameof(EquifaxScoringController), maxFileCount, sizeLimit, minLevel);
-                }
+                loggingBuilder.ClearProviders();
+                loggingBuilder.AddConsole();
 
-                if (_options.LogIncomming)
+                if (_options.FileLogging)
                 {
-                    loggingBuilder.BuildLogger(logsFolder, "RequestResponse", "RequestResponse", nameof(LoggingMiddleware), maxFileCount, sizeLimit, minLevel);
+                    var logsFolder = _options.LogsPath;
+                    var minLevel = _options.MinLevel;
+                    var sizeLimit = _options.FileSizeLimitBytes;
+                    var maxFileCount = _options.MaxRollingFiles;
+
+                    if (_options.LogBki)
+                    {
+                        loggingBuilder.BuildLogger(logsFolder, "Nbch", "Nbch", nameof(NbchController), maxFileCount, sizeLimit, minLevel);
+                        loggingBuilder.BuildLogger(logsFolder, "Experian", "Experian", nameof(ExperianController), maxFileCount, sizeLimit, minLevel);
+                        loggingBuilder.BuildLogger(logsFolder, "EquifaxFTP", "EquifaxFTP", nameof(EquifaxFTPService), maxFileCount, sizeLimit, minLevel);
+                        loggingBuilder.BuildLogger(logsFolder, "EquifaxFileServer", "EquifaxFileServer", nameof(EquifaxFileServerController), maxFileCount, sizeLimit, minLevel);
+                    }
+
+                    if (_options.LogIncomming)
+                    {
+                        loggingBuilder.BuildLogger(logsFolder, "RequestResponse", "RequestResponse", nameof(LoggingMiddleware), maxFileCount, sizeLimit, minLevel);
+                    }
                 }
             });
         }

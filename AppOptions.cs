@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 
 namespace PackageRequest
@@ -7,7 +5,8 @@ namespace PackageRequest
     public class AppOptions
     {
         public bool LogIncomming { get; set; }
-        public bool Loging { get; set; }
+        public bool FileLogging { get; set; }
+        public bool LogBki { get; set; }
         public string LogsPath { get; set; }
         public int MaxRollingFiles { get; set; }
         public long FileSizeLimitBytes { get; set; }
@@ -15,21 +14,18 @@ namespace PackageRequest
         public int SleepNbch { get; set; }
         public int SleepExperian { get; set; }
         public int SleepEquifax { get; set; }
-        public string FtpDirectoryIn { get; set; }
-        public string FtpDirectoryOut { get; set; }
-        public string RKK_NbchResponcePath { get; set; }
-        public int? NbchRetryCount { get; set; }
-        public int? EquifaxScoringRetryCount { get; set; }
-        public string RKK_NbchTakenResponcePath { get; set; }
-        public string RKK_NbchUsedResponcePath { get; set; }
-        public string RKK_EiResponcePath { get; set; }
-        public string RKK_EiUsedResponcePath { get; set; }
-        public string RKK_EquifaxResponcePath { get; set; }
-        public string RKK_EquifaxUsedResponcePath { get; set; }
-        public string ScoringEiResponcePath { get; set; }
-        public string ScoringEquifaxResponcePath { get; set; }
-        public string ScoringEquifaxRTakenResponcePath { get; set; }
-        public string ScoringEquifaxRUsedResponcePath { get; set; }
-        public bool EquifaxEnabled { get; set; }
+        public int NbchRetryCount { get; set; } = 1;
+        public string NbchResponcePath { get; set; }
+        public string NbchTakenResponcePath { get; set; }
+        public string NbchUsedResponcePath { get; set; }
+        public int EiRetryCount { get; set; } = 1;
+        public string EiResponcePath { get; set; }
+        public int EquifaxRetryCount { get; set; } = 1;
+        public string EquifaxResponcePath { get; set; }
+        public string EquifaxUsedResponcePath { get; set; }
+        public string EquifaxTakenResponcePath { get; set; }
+        public bool FTPEquifaxEnabled { get; set; }
+        public string EquifaxFtpDirectoryIn { get; set; }
+        public string EquifaxFtpDirectoryOut { get; set; }
     }
 }
