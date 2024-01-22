@@ -27,6 +27,26 @@ namespace Rkk2._0.Controllers.Equifax
             _listReponse = new Root();
         }
 
+        [HttpDelete("reset")]
+        public ActionResult Reset()
+        {
+            string[] taken = Directory.GetFiles(_options.EquifaxTakenResponcePath);
+            string[] used = Directory.GetFiles(_options.EquifaxUsedResponcePath);
+
+            foreach (var item in taken)
+            {
+                System.IO.File.Delete(item);
+            }
+
+            foreach (var item in used)
+            {
+                var resp = _options.EquifaxResponcePath + Path.GetFileName(item);
+                System.IO.File.Move(item, resp);
+            }
+
+            return Ok();
+        }
+
         [HttpPost("/api/auth/get")]//1 авторизация в бки
         public ActionResult Auth()
         {
@@ -70,23 +90,27 @@ namespace Rkk2._0.Controllers.Equifax
             var @event = _event;
 
             _logger.LogInformation(_event, $"CRE uploaded file {filename}");
+            filename = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(filename)));//убирает .zip.sgn.enc
+            var takenFile = Path.Combine(_options.EquifaxTakenResponcePath, $"outbox_{filename}_out.zip.sgn.enc");
 
-            string[] files = Directory.GetFiles(_options.EquifaxUsedResponcePath);
-            var responseFile = files.FirstOrDefault(x => !x.Contains("taken"));
-
-            if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
+            if (System.IO.File.Exists(Path.Combine(takenFile)))
             {
-                _logger.LogError(@event, $"Files in response folder {_options.EquifaxUsedResponcePath} not found");
+                return Ok();
+            }
+
+            var responseFile = Directory.GetFiles(_options.EquifaxResponcePath).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(responseFile))
+            {
+                _logger.LogError(@event, $"Files in response folder {_options.EquifaxResponcePath} not found");
                 throw new FileNotFoundException();
             }
 
-            var requestFileName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(filename)));//убирает .zip.sgn.enc
-            var takenFile = _options.EquifaxTakenResponcePath + Path.GetFileName($"outbox_{requestFileName}_out.zip.sgn.enc");
             System.IO.File.Copy(responseFile, takenFile);
 
             _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
 
-            var usedFile = _options.EquifaxUsedResponcePath + Path.GetFileName(responseFile);
+            var usedFile = Path.Combine(_options.EquifaxUsedResponcePath, Path.GetFileName(responseFile));
             System.IO.File.Move(responseFile, usedFile);
 
             _logger.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
@@ -107,10 +131,9 @@ namespace Rkk2._0.Controllers.Equifax
 
             Response.Headers.Add("Accept-Ranges", "bytes");
 
-            string[] files = Directory.GetFiles(_options.EquifaxTakenResponcePath);
-            var responseFile = files.FirstOrDefault(x=> Path.GetFileName(x) == filename);
+            var takenFile = Directory.GetFiles(_options.EquifaxTakenResponcePath).FirstOrDefault(x => Path.GetFileName(x) == filename);
 
-            if (files.Length == 0 || string.IsNullOrEmpty(responseFile))
+            if (string.IsNullOrEmpty(takenFile))
             {
                 _logger.LogError(@event, $"Files in response folder {_options.EquifaxTakenResponcePath} not found");
                 throw new FileNotFoundException();
@@ -124,19 +147,18 @@ namespace Rkk2._0.Controllers.Equifax
                 {
                     Stream fstream = new MemoryStream();
 
-                    using (var stream = new FileStream(responseFile, FileMode.Open, FileAccess.Read))
+                    using (var stream = new FileStream(takenFile, FileMode.Open, FileAccess.Read))
                     {
                         stream.Position = 0;
                         await stream.CopyToAsync(fstream);
                     }
 
-                    _logger.LogInformation(@event, $"File {responseFile} reading success");
+                    _logger.LogInformation(@event, $"File {takenFile} reading success");
 
-                    System.IO.File.Move(responseFile, _options.EquifaxUsedResponcePath + Path.GetFileName(responseFile));
-                    _logger.LogInformation(@event, $"Response {responseFile} is moved to used {_options.EquifaxUsedResponcePath + Path.GetFileName(responseFile)}");
+                    System.IO.File.Delete(takenFile);
 
                     fstream.Position = 0;
-                    return File(fstream, "application/pkcs7-mime");
+                    return File(fstream, "application/pkcs7-mime", filename);
                 }
                 catch (Exception ex)
                 {

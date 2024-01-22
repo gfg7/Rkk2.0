@@ -20,6 +20,8 @@ namespace PackageRequest
         public string NbchUsedResponcePath { get; set; }
         public int EiRetryCount { get; set; } = 1;
         public string EiResponcePath { get; set; }
+        public string EiUsedResponcePath { get; set; }
+        public string EiTakenResponcePath { get; set; }
         public int EquifaxRetryCount { get; set; } = 1;
         public string EquifaxResponcePath { get; set; }
         public string EquifaxUsedResponcePath { get; set; }

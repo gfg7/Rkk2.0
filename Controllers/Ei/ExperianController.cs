@@ -21,6 +21,26 @@ namespace PackageRequest.Controllers.Ei
             _logger = logger;
         }
 
+        [HttpDelete("reset")]
+        public ActionResult Reset()
+        {
+            string[] taken = Directory.GetFiles(_options.EiTakenResponcePath);
+            string[] used = Directory.GetFiles(_options.EiUsedResponcePath);
+
+            foreach (var item in taken)
+            {
+                System.IO.File.Delete(item);
+            }
+
+            foreach (var item in used)
+            {
+                var resp = _options.EiResponcePath + Path.GetFileName(item);
+                System.IO.File.Move(item, resp);
+            }
+
+            return Ok();
+        }
+
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name = "filename")] string filename = null)
@@ -37,12 +57,20 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                string[] files = Directory.GetFiles(_options.EiResponcePath);
-                var responseFile = files.FirstOrDefault();
-                var takenFile = Path.Combine(_options.EiResponcePath, filename!.Replace(filename[..filename.IndexOf("_")], "RESP"));
-                System.IO.File.Move(responseFile, takenFile);
+                var takenFile = Path.Combine(_options.EiTakenResponcePath, filename!.Replace(filename[..filename.IndexOf("_")], "RESP"));
 
-                _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
+                if (!System.IO.File.Exists(Path.Combine(takenFile)))
+                {
+                    var responseFile = Directory.GetFiles(_options.EiResponcePath).FirstOrDefault();
+                    System.IO.File.Copy(responseFile, takenFile);
+
+                    _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
+
+                    var usedFile = Path.Combine(_options.EiUsedResponcePath, Path.GetFileName(responseFile));
+                    System.IO.File.Move(responseFile, usedFile);
+
+                    _logger.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
+                }
 
                 resp = "<s>\n" +
                     "<s n=\"Data\">\n" +
@@ -69,10 +97,10 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 9)//запрос списка доступных на скачивание
             {
-                string[] firstRequested = Directory.GetFiles(_options.EiResponcePath); //Берем список файлов для ответа отсюда
+                string[] firstRequested = Directory.GetFiles(_options.EiTakenResponcePath); //Берем список файлов для ответа отсюда
 
                 _logger.LogInformation(@event, $"CRE asks for requested list");
-                string strXml = string.Join('\n', firstRequested.Where(x => x.Contains("RESP")).Select(x => $"<s><a n = \"Name\">{x}</a></s>"));
+                string strXml = string.Join('\n', firstRequested.Where(x => x.Contains("RESP")).Select(x => $"<s><a n = \"Name\">{Path.GetFileName(x)}</a></s>"));
 
                 resp = "<s>\n" +
                                   "<s n=\"Data\">\n" +
@@ -100,22 +128,23 @@ namespace PackageRequest.Controllers.Ei
                 {
                     try
                     {
-                        var requested = Path.Combine(_options.EiResponcePath, filename!);
-                        _logger.LogDebug(@event, $"searching for {requested} in response folder");
+                        var takenFile = Path.Combine(_options.EiTakenResponcePath, filename!);
+                        _logger.LogDebug(@event, $"searching for {takenFile} in response folder");
 
-                        if (!System.IO.File.Exists(requested))
+                        if (!System.IO.File.Exists(takenFile))
                         {
-                            _logger.LogError(@event, $"{requested} not found");
-                            throw new FileNotFoundException($"Requested file {requested} not found");
+                            _logger.LogError(@event, $"{takenFile} not found");
+                            throw new FileNotFoundException($"Requested file {takenFile} not found");
                         }
 
-                        using (var stream = new FileStream(requested, FileMode.Open, FileAccess.Read))
+                        using (var stream = new FileStream(takenFile, FileMode.Open, FileAccess.Read))
                         {
                             stream.Position = 0;
                             await stream.CopyToAsync(fstream);
                         }
 
-                        _logger.LogInformation(@event, $"File {requested} reading success");
+                        _logger.LogInformation(@event, $"File {takenFile} reading success");
+                        System.IO.File.Delete(takenFile);
 
                     }
                     catch (Exception ex)
