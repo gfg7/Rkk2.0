@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -48,7 +49,7 @@ namespace PackageRequest.Controllers.Ei
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name ="FileBody")] string upload, [FromForm(Name ="FileName")] string filename)
+        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name ="FileBody")] IFormFile upload, [FromForm(Name ="FileName")] string filename)
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
@@ -62,8 +63,8 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                upload = upload.Split("=")[1].Replace("\"", "");
-                var takenFile = Path.Combine(_options.EiTakenResponcePath, upload!.Replace(upload[..upload.IndexOf("_")], "RESP"));
+                var uploadName = upload.FileName;
+                var takenFile = Path.Combine(_options.EiTakenResponcePath, uploadName!.Replace(uploadName[..uploadName.IndexOf("_")], "RESP"));
 
                 if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
                 {
