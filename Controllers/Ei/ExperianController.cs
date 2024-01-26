@@ -48,33 +48,29 @@ namespace PackageRequest.Controllers.Ei
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name = "FileBody")] string filename = null)
+        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name ="FileBody")] string upload, [FromForm(Name ="FileName")] string filename)
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
-
-            if (string.IsNullOrWhiteSpace(filename))
-            {
-                filename = filename.Replace("\"", "").Split("=")[1];
-            }
 
             Thread.Sleep(_options.SleepExperian);
 
             string resp = "";
             Stream fstream = Stream.Null;
 
-            _logger.LogInformation(@event, $"Request action flag {actionFlag} req filename? {filename}");
+            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload} FileName {filename}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                var takenFile = Path.Combine(_options.EiTakenResponcePath, filename!.Replace(filename[..filename.IndexOf("_")], "RESP"));
+                upload = upload.Split("=")[1].Replace("\"", "");
+                var takenFile = Path.Combine(_options.EiTakenResponcePath, upload!.Replace(upload[..upload.IndexOf("_")], "RESP"));
 
                 if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
                 {
                     var responseFile = Directory.GetFiles(_options.EiResponcePath).FirstOrDefault();
                     System.IO.File.Copy(responseFile, takenFile);
 
-                    _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
+                    _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {upload} is created");
 
                     var usedFile = Path.Combine(_options.EiUsedResponcePath, Path.GetFileName(responseFile));
                     System.IO.File.Move(responseFile, usedFile);
