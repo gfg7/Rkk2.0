@@ -48,17 +48,22 @@ namespace PackageRequest.Controllers.Ei
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name = "filename")] string filename = null)
+        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name = "Filebody")] string filename = null)
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
+
+            if (string.IsNullOrWhiteSpace(filename))
+            {
+                filename = filename.Replace("\"", "").Split("=")[1];
+            }
 
             Thread.Sleep(_options.SleepExperian);
 
             string resp = "";
             Stream fstream = Stream.Null;
 
-            _logger.LogInformation(@event, $"Request action flag {actionFlag}");
+            _logger.LogInformation(@event, $"Request action flag {actionFlag} req filename? {filename}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {
