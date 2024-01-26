@@ -4,6 +4,7 @@ namespace PackageRequest
 {
     public class AppOptions
     {
+        public bool OfflineMode {get; set;}
         public bool LogIncomming { get; set; }
         public bool FileLogging { get; set; }
         public bool LogBki { get; set; }

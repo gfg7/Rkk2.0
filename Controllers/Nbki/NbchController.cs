@@ -25,6 +25,11 @@ namespace PackageRequest.Controllers.Nbki
         [HttpDelete("reset")]
         public ActionResult Reset()
         {
+            if (_options.OfflineMode)
+            {
+                return BadRequest($"offline is on");
+            }
+
             string[] taken = Directory.GetFiles(_options.NbchTakenResponcePath);
             string[] used = Directory.GetFiles(_options.NbchUsedResponcePath);
 
@@ -112,7 +117,7 @@ namespace PackageRequest.Controllers.Nbki
 
             _logger.LogInformation(@event, "CRE pushed request");
 
-            return Ok();
+            return Ok("неизвестный ответ от БКИ, который нам не дали и его не парсят, но он нужен :)");
 
             // записываем пришедший файл на винт
             /*using (var fileStream = new FileStream(path + fileName, FileMode.Create))

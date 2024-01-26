@@ -30,6 +30,11 @@ namespace Rkk2._0.Controllers.Equifax
         [HttpDelete("reset")]
         public ActionResult Reset()
         {
+            if (_options.OfflineMode)
+            {
+                return BadRequest($"offline is on");
+            }
+
             string[] taken = Directory.GetFiles(_options.EquifaxTakenResponcePath);
             string[] used = Directory.GetFiles(_options.EquifaxUsedResponcePath);
 
@@ -93,7 +98,7 @@ namespace Rkk2._0.Controllers.Equifax
             filename = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(filename)));//убирает .zip.sgn.enc
             var takenFile = Path.Combine(_options.EquifaxTakenResponcePath, $"outbox_{filename}_out.zip.sgn.enc");
 
-            if (System.IO.File.Exists(Path.Combine(takenFile)))
+            if (System.IO.File.Exists(Path.Combine(takenFile)) ^ _options.OfflineMode)
             {
                 return Ok();
             }

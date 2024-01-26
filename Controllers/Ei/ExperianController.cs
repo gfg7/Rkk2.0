@@ -24,6 +24,11 @@ namespace PackageRequest.Controllers.Ei
         [HttpDelete("reset")]
         public ActionResult Reset()
         {
+            if (_options.OfflineMode)
+            {
+                return BadRequest($"offline is on");
+            }
+
             string[] taken = Directory.GetFiles(_options.EiTakenResponcePath);
             string[] used = Directory.GetFiles(_options.EiUsedResponcePath);
 
@@ -59,7 +64,7 @@ namespace PackageRequest.Controllers.Ei
             {
                 var takenFile = Path.Combine(_options.EiTakenResponcePath, filename!.Replace(filename[..filename.IndexOf("_")], "RESP"));
 
-                if (!System.IO.File.Exists(Path.Combine(takenFile)))
+                if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
                 {
                     var responseFile = Directory.GetFiles(_options.EiResponcePath).FirstOrDefault();
                     System.IO.File.Copy(responseFile, takenFile);
