@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace PackageRequest.Controllers.Ei
 {
-    [Route("[controller]")]
+    [Route("[controller]/old")]
     public class ExperianController : Controller
     {
         private readonly AppOptions _options;
@@ -49,17 +49,18 @@ namespace PackageRequest.Controllers.Ei
 
         [HttpPost]
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
-        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name ="FileBody")] IFormFile upload, [FromForm(Name ="FileName")] string filename)
+        public async Task<ActionResult> OkbList([FromForm(Name = "ActionFlag")] int actionFlag, [FromForm(Name = "FileBody")] IFormFile upload)
         {
             var @event = new EventId(new Random().Next(), nameof(ExperianController));
             DateTime date = DateTime.Now;
 
             Thread.Sleep(_options.SleepExperian);
 
+            Request.Form.TryGetValue("FileName", out var filename);
             string resp = "";
             Stream fstream = Stream.Null;
 
-            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload} FileName {filename}");
+            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.FileName} FileName {filename}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {
