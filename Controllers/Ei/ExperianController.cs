@@ -57,10 +57,11 @@ namespace PackageRequest.Controllers.Ei
             Thread.Sleep(_options.SleepExperian);
 
             Request.Form.TryGetValue("FileName", out var filename);
+            filename = string.IsNullOrWhiteSpace(filename) ? upload.FileName : filename.ToString();
             string resp = "";
             Stream fstream = Stream.Null;
 
-            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.Length} bytes FileName {filename}");
+            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.Length} bytes FileName {upload.FileName}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {

@@ -115,7 +115,7 @@ namespace PackageRequest.Controllers.Nbki
         {
             var @event = _event;
 
-            _logger.LogInformation(@event, "CRE pushed request");
+            _logger.LogInformation(@event, $"CRE pushed request {Request.Form.Files.FirstOrDefault()?.FileName} {Request.Form.Files.FirstOrDefault()?.Length}");
 
             return Ok("неизвестный ответ от БКИ, который нам не дали и его не парсят, но он нужен :)");
 

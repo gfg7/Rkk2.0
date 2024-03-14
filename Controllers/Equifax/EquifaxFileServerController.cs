@@ -94,7 +94,7 @@ namespace Rkk2._0.Controllers.Equifax
         {
             var @event = _event;
 
-            _logger.LogInformation(_event, $"CRE uploaded file {filename}");
+            _logger.LogInformation(_event, $"CRE uploaded file {filename} {Request.Form.Files.FirstOrDefault()?.Length}");
             filename = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(filename)));//убирает .zip.sgn.enc
             var takenFile = Path.Combine(_options.EquifaxTakenResponcePath, $"outbox_{filename}_out.zip.sgn.enc");
 
