@@ -60,7 +60,7 @@ namespace PackageRequest.Controllers.Ei
             string resp = "";
             Stream fstream = Stream.Null;
 
-            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.FileName} FileName {filename}");
+            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.Length} bytes FileName {filename}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {
