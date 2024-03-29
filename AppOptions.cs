@@ -11,6 +11,7 @@ namespace PackageRequest
         public string LogsPath { get; set; }
         public int MaxRollingFiles { get; set; }
         public long FileSizeLimitBytes { get; set; }
+        public int MaxFileBuffer { get; set; } = 2048;
         public LogLevel MinLevel { get; set; }
         public int SleepNbch { get; set; }
         public int SleepExperian { get; set; }

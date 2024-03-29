@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Rkk2;
 
 namespace PackageRequest.Controllers.Nbki
 {
@@ -65,7 +66,7 @@ namespace PackageRequest.Controllers.Nbki
 
             if (!System.IO.File.Exists(Path.Combine(takenFile)))
             {
-                var responseFile = Directory.GetFiles(_options.NbchResponcePath).FirstOrDefault();
+                var responseFile = Directory.GetFiles(_options.NbchResponcePath).OrderBy(x=>x).FirstOrDefault();
 
                 if (string.IsNullOrEmpty(responseFile))
                 {
@@ -85,7 +86,7 @@ namespace PackageRequest.Controllers.Nbki
             {
                 try
                 {
-                    Stream fstream = new MemoryStream();
+                    Stream fstream = new HugeMemoryStream(_options.MaxFileBuffer);
 
                     using (var stream = new FileStream(takenFile, FileMode.Open, FileAccess.Read))
                     {

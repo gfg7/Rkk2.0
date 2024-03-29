@@ -103,7 +103,7 @@ namespace Rkk2._0.Controllers.Equifax
                 return Ok();
             }
 
-            var responseFile = Directory.GetFiles(_options.EquifaxResponcePath).FirstOrDefault();
+            var responseFile = Directory.GetFiles(_options.EquifaxResponcePath).OrderBy(x=>x).FirstOrDefault();
 
             if (string.IsNullOrEmpty(responseFile))
             {
@@ -144,13 +144,13 @@ namespace Rkk2._0.Controllers.Equifax
                 throw new FileNotFoundException();
             }
 
-            await Task.Delay(_options.SleepNbch);
+            await Task.Delay(_options.SleepEquifax);
 
             for (int retry = 0; retry <= _options.EquifaxRetryCount;)
             {
                 try
                 {
-                    Stream fstream = new MemoryStream();
+                    Stream fstream = new HugeMemoryStream(_options.MaxFileBuffer);
 
                     using (var stream = new FileStream(takenFile, FileMode.Open, FileAccess.Read))
                     {

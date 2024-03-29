@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Rkk2;
 
 namespace PackageRequest.Controllers.Ei
 {
@@ -59,26 +61,36 @@ namespace PackageRequest.Controllers.Ei
             Request.Form.TryGetValue("FileName", out var filename);
             filename = string.IsNullOrWhiteSpace(filename) ? upload.FileName : filename.ToString();
             string resp = "";
-            Stream fstream = Stream.Null;
+            Stream fstream = null;
 
-            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.Length} bytes FileName {upload.FileName}");
+            _logger.LogInformation(@event, $"Request ActionFlag {actionFlag} FileBody {upload?.Length} bytes FileName {upload?.FileName}");
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                var uploadName = upload.FileName;
-                var takenFile = Path.Combine(_options.EiTakenResponcePath, uploadName!.Replace(uploadName[..uploadName.IndexOf("_")], "RESP"));
+                var uploadName = upload?.FileName ?? filename;
+                var takenFilename = uploadName!.Replace(uploadName[..uploadName.IndexOf("_")], "RESP");
+                var takenFile = Path.Combine(_options.EiTakenResponcePath, takenFilename);
 
-                if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
+                var takenDir = Path.Join(_options.EiTakenResponcePath, takenFilename.Split('.')[0]);
+                if (!Directory.Exists(takenDir) && !_options.OfflineMode)
                 {
-                    var responseFile = Directory.GetFiles(_options.EiResponcePath).FirstOrDefault();
-                    System.IO.File.Copy(responseFile, takenFile);
+                    var responseDir = Directory.GetDirectories(_options.EiResponcePath).OrderBy(x => x).FirstOrDefault();
+                    Directory.CreateDirectory(takenDir);
+                    var responseFiles = Directory.GetFiles(responseDir);
 
-                    _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {upload} is created");
+                    int i = 1;
+                    foreach (var item in responseFiles)
+                    {
+                        var filepartName = $"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(takenFilename)))}.zip.{i.ToString("D4")}_{responseFiles.Count()}.pem.pem";
+                        System.IO.File.Copy(item, Path.Combine(takenDir, filepartName));
+                        i++;
+                    }
 
-                    var usedFile = Path.Combine(_options.EiUsedResponcePath, Path.GetFileName(responseFile));
-                    System.IO.File.Move(responseFile, usedFile);
+                    _logger.LogInformation(@event, $"File {responseDir} is taken {takenFile} - response for request {upload} is created");
 
-                    _logger.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
+                    Directory.Move(responseDir, Path.Join(_options.EiUsedResponcePath, Path.GetFileName(responseDir)));
+
+                    _logger.LogInformation(@event, $"Original {responseDir} is moved to used");
                 }
 
                 resp = "<s>\n" +
@@ -106,7 +118,12 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 9)//запрос списка доступных на скачивание
             {
-                string[] firstRequested = Directory.GetFiles(_options.EiTakenResponcePath); //Берем список файлов для ответа отсюда
+                List<string> firstRequested = new List<string>(); //Берем список файлов для ответа отсюда
+
+                foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
+                {
+                    firstRequested.AddRange(Directory.GetFiles(item));
+                }
 
                 _logger.LogInformation(@event, $"CRE asks for requested list");
                 string strXml = string.Join('\n', firstRequested.Where(x => x.Contains("RESP")).Select(x => $"<s><a n = \"Name\">{Path.GetFileName(x)}</a></s>"));
@@ -133,11 +150,13 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 1)//скачивание файла
             {
+                fstream = new HugeMemoryStream(_options.MaxFileBuffer);
+
                 for (int retry = 0; retry <= _options.EiRetryCount;)
                 {
                     try
                     {
-                        var takenFile = Path.Combine(_options.EiTakenResponcePath, filename!);
+                        var takenFile = Path.Combine(_options.EiTakenResponcePath, filename.ToString().Split('.')[0], filename);
                         _logger.LogDebug(@event, $"searching for {takenFile} in response folder");
 
                         if (!System.IO.File.Exists(takenFile))
@@ -153,7 +172,10 @@ namespace PackageRequest.Controllers.Ei
                         }
 
                         _logger.LogInformation(@event, $"File {takenFile} reading success");
+
                         System.IO.File.Delete(takenFile);
+                        fstream.Position = 0;
+                        return File(fstream, "application/xml");
 
                     }
                     catch (Exception ex)
@@ -161,6 +183,7 @@ namespace PackageRequest.Controllers.Ei
                         _logger.LogWarning(@event, ex, $"File {filename} fail - iteration {retry}");
                         retry++;
                     }
+
                 }
             }
 
