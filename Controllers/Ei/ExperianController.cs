@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Rkk2;
 
 namespace PackageRequest.Controllers.Ei
@@ -80,7 +81,7 @@ namespace PackageRequest.Controllers.Ei
                     int i = 1;
                     foreach (var item in responseFiles)
                     {
-                        var filepartName = $"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(takenFilename)))}.zip.{i.ToString("D4")}_{responseFiles.Count()}.pem.pem";
+                        var filepartName = $"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(takenFilename)))}.zip.{i.ToString("D3")}_{responseFiles.Count()}.pem.pem";
                         System.IO.File.Copy(item, Path.Combine(takenDir, filepartName));
                         i++;
                     }
@@ -175,6 +176,8 @@ namespace PackageRequest.Controllers.Ei
 
                         System.IO.File.Delete(takenFile);
                         fstream.Position = 0;
+
+                        Response.Headers.Add(new KeyValuePair<string, StringValues>("Content-Disposition",$"Filename={filename}"));
                         return File(fstream, "application/xml");
 
                     }
