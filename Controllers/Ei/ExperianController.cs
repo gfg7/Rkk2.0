@@ -58,8 +58,7 @@ namespace PackageRequest.Controllers.Ei
 
             Thread.Sleep(_options.SleepExperian);
 
-            Request.Form.TryGetValue("FileName", out var filename);
-            filename = string.IsNullOrWhiteSpace(filename) ? upload.FileName : filename.ToString();
+            var filename = upload?.FileName;
             string resp = "";
             Stream fstream = null;
 
@@ -67,7 +66,7 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                var uploadName = upload?.FileName ?? filename;
+                var uploadName = string.Join('.',filename.Split('.').Take(2));
                 var takenFilename = uploadName!.Replace(uploadName[..uploadName.IndexOf("_")], "RESP");
                 var takenFile = Path.Combine(_options.EiTakenResponcePath, takenFilename);
 
@@ -118,6 +117,8 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 9)//запрос списка доступных на скачивание
             {
+                _logger.LogInformation(@event, $"CRE asks for requested list");
+                
                 List<string> firstRequested = new List<string>(); //Берем список файлов для ответа отсюда
 
                 foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
@@ -125,7 +126,6 @@ namespace PackageRequest.Controllers.Ei
                     firstRequested.AddRange(Directory.GetFiles(item));
                 }
 
-                _logger.LogInformation(@event, $"CRE asks for requested list");
                 string strXml = string.Join('\n', firstRequested.Where(x => x.Contains("RESP")).Select(x => $"<s><a n = \"Name\">{Path.GetFileName(x)}</a></s>"));
 
                 resp = "<s>\n" +
