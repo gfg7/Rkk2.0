@@ -103,7 +103,7 @@ namespace Rkk2._0.Controllers.Equifax
                 return Ok();
             }
 
-            var responseFile = Directory.GetFiles(_options.EquifaxResponcePath).OrderBy(x=>x).FirstOrDefault();
+            var responseFile = Directory.GetFiles(_options.EquifaxResponcePath).OrderBy(x => x).FirstOrDefault();
 
             if (string.IsNullOrEmpty(responseFile))
             {
@@ -115,10 +115,13 @@ namespace Rkk2._0.Controllers.Equifax
 
             _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile} - response for request {filename} is created");
 
-            var usedFile = Path.Combine(_options.EquifaxUsedResponcePath, Path.GetFileName(responseFile));
-            System.IO.File.Move(responseFile, usedFile);
+            if (!string.IsNullOrWhiteSpace(_options.EquifaxUsedResponcePath))
+            {
+                var usedFile = Path.Combine(_options.EquifaxUsedResponcePath, Path.GetFileName(responseFile));
+                System.IO.File.Move(responseFile, usedFile);
 
-            _logger.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
+                _logger.LogInformation(@event, $"Original {responseFile} is moved to used {usedFile}");
+            }
 
             return Ok();
         }

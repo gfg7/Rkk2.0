@@ -66,7 +66,7 @@ namespace PackageRequest.Controllers.Nbki
 
             if (!System.IO.File.Exists(Path.Combine(takenFile)))
             {
-                var responseFile = Directory.GetFiles(_options.NbchResponcePath).OrderBy(x=>x).FirstOrDefault();
+                var responseFile = Directory.GetFiles(_options.NbchResponcePath).OrderBy(x => x).FirstOrDefault();
 
                 if (string.IsNullOrEmpty(responseFile))
                 {
@@ -77,9 +77,12 @@ namespace PackageRequest.Controllers.Nbki
                 System.IO.File.Copy(responseFile, takenFile);
                 _logger.LogInformation(@event, $"File {responseFile} is taken {takenFile}");
 
-                var usedFile = Path.Combine(_options.NbchUsedResponcePath, Path.GetFileName(responseFile));
-                System.IO.File.Move(responseFile, usedFile);
-                _logger.LogInformation(@event, $"Response {responseFile} is moved to used {usedFile}");
+                if (!string.IsNullOrWhiteSpace(_options.NbchUsedResponcePath))
+                {
+                    var usedFile = Path.Combine(_options.NbchUsedResponcePath, Path.GetFileName(responseFile));
+                    System.IO.File.Move(responseFile, usedFile);
+                    _logger.LogInformation(@event, $"Response {responseFile} is moved to used {usedFile}");
+                }
             }
 
             for (int retry = 0; retry <= _options.NbchRetryCount;)

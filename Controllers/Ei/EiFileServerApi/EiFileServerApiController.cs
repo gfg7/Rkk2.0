@@ -55,6 +55,7 @@ namespace Rkk2._0.Controllers.Ei
         [HttpPost]
         [Route("/file/inbox/{kind}")]
         [Consumes("multipart/form-data")]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxKindPost([FromRoute(Name = "kind")][Required] string kind, [FromForm(Name = "fileName")] string fileName, [FromForm(Name = "fileSize")] int? fileSize, IFormFile fileData)
         {
             var id = long.Parse(_event.ToString());
@@ -138,6 +139,7 @@ namespace Rkk2._0.Controllers.Ei
         /// <response code="404">Not found - code: 120001   description: Запись о файле не найдена в репозитории </response>
         /// <response code="5XX">Unexpected error</response>
         [HttpPost]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         [Route("/file/inbox/multipart/abort/{uploadId}")]
         public virtual IActionResult FileInboxMultipartAbortUploadIdPost([FromRoute(Name = "uploadId")][Required] long uploadId)
         {
@@ -157,6 +159,7 @@ namespace Rkk2._0.Controllers.Ei
         /// <response code="5XX">Unexpected error</response>
         [HttpPost]
         [Route("/file/inbox/multipart/finish/{uploadId}")]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxMultipartFinishUploadIdPost([FromRoute(Name = "uploadId")][Required] long uploadId)
         {
 
@@ -178,6 +181,7 @@ namespace Rkk2._0.Controllers.Ei
         [HttpPost]
         [Route("/file/inbox/multipart/part/{uploadId}/{partNumber}")]
         [Consumes("multipart/form-data")]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxMultipartPartUploadIdPartNumberPost([FromRoute(Name = "uploadId")][Required] long uploadId, [FromRoute(Name = "partNumber")][Required] int partNumber, IFormFile filePart)
         {
 
@@ -198,6 +202,7 @@ namespace Rkk2._0.Controllers.Ei
         [HttpPost]
         [Route("/file/inbox/multipart/start/{kind}")]
         [Consumes("application/json")]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxMultipartStartKindPost([FromRoute(Name = "kind")][Required] string kind, [FromBody] FileInboxMultipartStartKindPostRequest fileInboxMultipartStartKindPostRequest)
         {
 
@@ -233,21 +238,21 @@ namespace Rkk2._0.Controllers.Ei
         [Route("/file/outbox/by-name/{name}")]
         public virtual async Task<IActionResult> FileOutboxByNameNameGetAsync([FromRoute(Name = "name")][Required] string name)
         {
-            Stream fstream = Stream.Null;
+            var files = Directory.GetFiles(_options.EiTakenResponcePath);
+            var takenFile = files.FirstOrDefault(x => x.Contains(name));
+            _logger.LogDebug(_event, $"searching for {takenFile} in response folder");
+
+            if (!System.IO.File.Exists(takenFile))
+            {
+                _logger.LogError(_event, $"{takenFile} not found");
+                throw new FileNotFoundException($"Requested file {takenFile} not found");
+            }
 
             for (int retry = 0; retry <= _options.EiRetryCount;)
             {
                 try
                 {
-                    var files = Directory.GetFiles(_options.EiTakenResponcePath);
-                    var takenFile = files.FirstOrDefault(x => x.Contains(name));
-                    _logger.LogDebug(_event, $"searching for {takenFile} in response folder");
-
-                    if (!System.IO.File.Exists(takenFile))
-                    {
-                        _logger.LogError(_event, $"{takenFile} not found");
-                        throw new FileNotFoundException($"Requested file {takenFile} not found");
-                    }
+                    Stream fstream = new HugeMemoryStream(_options.MaxFileBuffer);
 
                     using (var stream = new FileStream(takenFile, FileMode.Open, FileAccess.Read))
                     {
@@ -325,6 +330,7 @@ namespace Rkk2._0.Controllers.Ei
         [HttpPost]
         [Route("/file/outbox/mark-downloaded")]
         [Consumes("application/json")]
+        [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileOutboxMarkDownloadedPost([FromBody] FileInboxMultipartStartKindPostRequest fileInboxMultipartStartKindPostRequest)
         {
 

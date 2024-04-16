@@ -67,7 +67,7 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 7) //загрузка файла в бки
             {
-                var uploadName = string.Join('.',filename.Split('.').Take(2));
+                var uploadName = string.Join('.', filename.Split('.').Take(2));
                 var takenFilename = uploadName!.Replace(uploadName[..uploadName.IndexOf("_")], "RESP");
                 var takenFile = Path.Combine(_options.EiTakenResponcePath, takenFilename);
 
@@ -88,9 +88,12 @@ namespace PackageRequest.Controllers.Ei
 
                     _logger.LogInformation(@event, $"File {responseDir} is taken {takenFile} - response for request {upload} is created");
 
-                    Directory.Move(responseDir, Path.Join(_options.EiUsedResponcePath, Path.GetFileName(responseDir)));
+                    if (!string.IsNullOrWhiteSpace(_options.EiUsedResponcePath))
+                    {
+                        Directory.Move(responseDir, Path.Join(_options.EiUsedResponcePath, Path.GetFileName(responseDir)));
 
-                    _logger.LogInformation(@event, $"Original {responseDir} is moved to used");
+                        _logger.LogInformation(@event, $"Original {responseDir} is moved to used");
+                    }
                 }
 
                 resp = "<s>\n" +
@@ -119,7 +122,7 @@ namespace PackageRequest.Controllers.Ei
             if (actionFlag == 9)//запрос списка доступных на скачивание
             {
                 _logger.LogInformation(@event, $"CRE asks for requested list");
-                
+
                 List<string> firstRequested = new List<string>(); //Берем список файлов для ответа отсюда
 
                 foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
@@ -151,6 +154,9 @@ namespace PackageRequest.Controllers.Ei
 
             if (actionFlag == 1)//скачивание файла
             {
+                Request.Form.TryGetValue("FileName", out var f);
+                filename = f.ToString();
+
                 fstream = new HugeMemoryStream(_options.MaxFileBuffer);
 
                 for (int retry = 0; retry <= _options.EiRetryCount;)
@@ -177,7 +183,7 @@ namespace PackageRequest.Controllers.Ei
                         System.IO.File.Delete(takenFile);
                         fstream.Position = 0;
 
-                        Response.Headers.Add(new KeyValuePair<string, StringValues>("Content-Disposition",$"Filename={filename}"));
+                        Response.Headers.Add(new KeyValuePair<string, StringValues>("Content-Disposition", $"Filename={filename}"));
                         return File(fstream, "application/xml");
 
                     }
