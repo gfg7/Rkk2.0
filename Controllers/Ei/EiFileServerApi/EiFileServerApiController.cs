@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Rkk2._0.Controllers.Ei
 {
@@ -58,24 +59,44 @@ namespace Rkk2._0.Controllers.Ei
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxKindPost([FromRoute(Name = "kind")][Required] string kind, [FromForm(Name = "fileName")] string fileName, [FromForm(Name = "fileSize")] int? fileSize, IFormFile fileData)
         {
-            var id = long.Parse(_event.Id.ToString());
-            var takenFile = Path.Combine(_options.EiTakenResponcePath, fileName.Replace(fileName[..fileName.IndexOf("_")], "RESP") + "_" + id);
+            var @event = _event;
 
-            if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
+            var uploadName = string.Join('.', fileName.Split('.').Take(2));
+            var takenFilename = uploadName;
+
+            var takenDir = Path.Join(_options.EiTakenResponcePath, takenFilename.Split('.')[0]);
+            if (!Directory.Exists(takenDir) && !_options.OfflineMode)
             {
-                var responseFile = Directory.GetFiles(_options.EiResponcePath).FirstOrDefault();
-                System.IO.File.Copy(responseFile, takenFile);
+                var responseDir = Directory.GetDirectories(_options.EiResponcePath).OrderBy(x => x).FirstOrDefault();
+                Directory.CreateDirectory(takenDir);
+                var responseFiles = Directory.GetFiles(responseDir);
 
-                _logger.LogInformation(_event, $"File {responseFile} is taken {takenFile} - response for request {fileName} is created");
+                int i = 1;
+                foreach (var item in responseFiles)
+                {
+                    var filepartName = $"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(takenFilename)))}.zip.{i.ToString("D3")}_{responseFiles.Count()}.pem.pem";
+                    System.IO.File.Copy(item, Path.Combine(takenDir, filepartName));
+                    i++;
+                }
 
-                var usedFile = Path.Combine(_options.EiUsedResponcePath, Path.GetFileName(responseFile));
-                System.IO.File.Move(responseFile, usedFile);
+                _logger.LogInformation(@event, $"File {responseDir} is taken - response for request is created");
 
-                _logger.LogInformation(_event, $"Original {responseFile} is moved to used {usedFile}");
+                if (!string.IsNullOrWhiteSpace(_options.EiUsedResponcePath))
+                {
+                    Directory.Move(responseDir, Path.Join(_options.EiUsedResponcePath, Path.GetFileName(responseDir)));
+
+                    _logger.LogInformation(@event, $"Original {responseDir} is moved to used");
+                }
             }
+
+            if (_options.OfflineMode)
+            {
+                System.IO.File.WriteAllText(Path.Join(_options.EiTakenResponcePath, fileName), $"stub for offline {fileName}");
+            }
+
             var resp = new FileRecord()
             {
-                Id = id,
+                Id = _event.Id,
                 CreatedAt = DateTime.Now,
                 Name = fileName,
                 Size = fileSize ?? fileData.Length
@@ -99,26 +120,28 @@ namespace Rkk2._0.Controllers.Ei
         [Route("/file/inbox/list")]
         public virtual IActionResult FileInboxListGet([FromQuery(Name = "page")] int? page, [FromQuery(Name = "count")] int? count, [FromQuery(Name = "kind")] string kind)
         {
-            string[] firstRequested = Directory.GetFiles(_options.EiTakenResponcePath); //Берем список файлов для ответа отсюда
+            List<string> firstRequested = new List<string>(); //Берем список файлов для ответа отсюда
+
+            firstRequested.AddRange(Directory.GetFiles(_options.EiTakenResponcePath));
+            foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
+            {
+                firstRequested.AddRange(Directory.GetFiles(item));
+            }
 
             _logger.LogInformation(_event, $"CRE asks for requested list");
 
             var resp = new FileListResult()
             {
-                TotalCount = firstRequested.Length,
+                TotalCount = firstRequested.Count,
                 Page = new FileListResultPage()
                 {
                     Files = firstRequested.ToList().Skip((page ?? 0) * (count ?? 20)).Take(count ?? 20)
                         .Select(x =>
                         {
-                            var id = x.Split("_").TakeLast(1).First();
-                            var prefix = _options.OfflineMode ? "CHP" : "CHD";
-                            var name = Path.GetFileName(x).Replace("RESP", prefix).Replace("_" + id, string.Empty);
-
                             return new FileRecord()
                             {
-                                Id = long.Parse(id),
-                                Name = name,
+                                Id = _event.Id,
+                                Name = Path.GetFileName(x),
                                 Size = long.MaxValue,
                                 CreatedAt = DateTime.Now
                             };
@@ -238,8 +261,15 @@ namespace Rkk2._0.Controllers.Ei
         [Route("/file/outbox/by-name/{name}")]
         public virtual async Task<IActionResult> FileOutboxByNameNameGetAsync([FromRoute(Name = "name")][Required] string name)
         {
-            var files = Directory.GetFiles(_options.EiTakenResponcePath);
-            var takenFile = files.FirstOrDefault(x => x.Contains(name));
+            var files = Directory.GetFiles(_options.EiTakenResponcePath).ToList();
+            foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
+            {
+                files.AddRange(Directory.GetFiles(item));
+            }
+
+            var req = name.Replace("RESP", _options.OfflineMode ? "CHP" : "CHD");
+
+            var takenFile = files.FirstOrDefault(x => x.Contains(req));
             _logger.LogDebug(_event, $"searching for {takenFile} in response folder");
 
             if (!System.IO.File.Exists(takenFile))
@@ -262,7 +292,9 @@ namespace Rkk2._0.Controllers.Ei
 
                     _logger.LogInformation(_event, $"File {takenFile} reading success");
                     System.IO.File.Delete(takenFile);
-                    return File(fstream, "application/xml");
+
+                    fstream.Position = 0;
+                    return File(fstream, "application/json", fileDownloadName: name);
 
                 }
                 catch (Exception ex)
@@ -289,24 +321,28 @@ namespace Rkk2._0.Controllers.Ei
         [Route("/file/outbox/list")]
         public virtual IActionResult FileOutboxListGet([FromQuery(Name = "page")] int? page, [FromQuery(Name = "count")] int? count, [FromQuery(Name = "kind")] string kind)
         {
-            string[] firstRequested = Directory.GetFiles(_options.EiTakenResponcePath); //Берем список файлов для ответа отсюда
+            var files = Directory.GetFiles(_options.EiTakenResponcePath).ToList();
+            foreach (var item in Directory.GetDirectories(_options.EiTakenResponcePath))
+            {
+                files.AddRange(Directory.GetFiles(item));
+            }
 
             _logger.LogInformation(_event, $"CRE asks for requested list");
 
             var resp = new FileListResult()
             {
-                TotalCount = firstRequested.Length,
+                TotalCount = files.Count,
                 Page = new FileListResultPage()
                 {
-                    Files = firstRequested.ToList().Skip((page ?? 0) * (count ?? 20)).Take(count ?? 20)
+                    Files = files.ToList().Skip((page ?? 0) * (count ?? 20)).Take(count ?? 20)
                         .Select(x =>
                         {
-                            var id = x.Split("_").TakeLast(1).First();
-                            var name = Path.GetFileName(x).Replace("_" + id, string.Empty);
+
+                            var name = Path.GetFileName(x).Replace("CHD", "RESP").Replace("CHP", "RESP");
 
                             return new FileRecord()
                             {
-                                Id = long.Parse(id),
+                                Id = _event.Id,
                                 Name = name,
                                 Size = long.MaxValue,
                                 CreatedAt = DateTime.Now
