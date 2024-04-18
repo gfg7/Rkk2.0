@@ -58,7 +58,7 @@ namespace Rkk2._0.Controllers.Ei
         [DisableRequestSizeLimit, RequestFormLimits(MultipartBodyLengthLimit = Int32.MaxValue, ValueLengthLimit = Int32.MaxValue), RequestSizeLimit(long.MaxValue)]
         public virtual IActionResult FileInboxKindPost([FromRoute(Name = "kind")][Required] string kind, [FromForm(Name = "fileName")] string fileName, [FromForm(Name = "fileSize")] int? fileSize, IFormFile fileData)
         {
-            var id = long.Parse(_event.ToString());
+            var id = long.Parse(_event.Id.ToString());
             var takenFile = Path.Combine(_options.EiTakenResponcePath, fileName.Replace(fileName[..fileName.IndexOf("_")], "RESP") + "_" + id);
 
             if (!System.IO.File.Exists(Path.Combine(takenFile)) && !_options.OfflineMode)
