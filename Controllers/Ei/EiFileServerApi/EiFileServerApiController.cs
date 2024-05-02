@@ -61,7 +61,9 @@ namespace Rkk2._0.Controllers.Ei
         {
             var @event = _event;
 
-            fileName ??= Request.Form.Files.First().FileName;
+            fileName ??= Request.Form.Files.FirstOrDefault()?.FileName ?? fileData.FileName;
+
+            _logger.LogInformation(@event, $"cre uploaded {fileName}");
 
             var uploadName = string.Join('.', fileName.Split('.').Take(2));
             var takenFilename = uploadName;
